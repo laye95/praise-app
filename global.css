@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Theme Variables - App-specific colors */
+:root {
+  /* Page Backgrounds */
+  --theme-page-bg-light: 250 250 250; /* #fafafa */
+  --theme-page-bg-dark: 15 23 42; /* #0f172a */
+
+  /* Card Backgrounds */
+  --theme-card-bg-light: 255 255 255; /* #ffffff */
+  --theme-card-bg-dark: 30 41 59; /* #1e293b */
+
+  /* Card Borders */
+  --theme-card-border-light: 243 244 246; /* #f3f4f6 */
+  --theme-card-border-dark: 51 65 85; /* #334155 */
+
+  /* Text Colors */
+  --theme-text-primary-light: 17 24 39; /* #111827 */
+  --theme-text-primary-dark: 241 245 249; /* #f1f5f9 */
+
+  --theme-text-secondary-light: 107 114 128; /* #6b7280 */
+  --theme-text-secondary-dark: 148 163 184; /* #94a3b8 */
+
+  --theme-text-tertiary-light: 156 163 175; /* #9ca3af */
+  --theme-text-tertiary-dark: 100 116 139; /* #64748b */
+
+  /* Button Colors */
+  --theme-button-accept-light: 16 185 129; /* #10b981 */
+  --theme-button-accept-dark: 16 185 129; /* #10b981 */
+
+  --theme-button-decline-light: 220 38 38; /* #dc2626 */
+  --theme-button-decline-dark: 248 113 113; /* #f87171 */
+
+  --theme-button-primary-light: 99 102 241; /* #6366f1 */
+  --theme-button-primary-dark: 30 64 175; /* #1e40af */
+
+  /* Tab/Segmented Control */
+  --theme-tab-active-light: 99 102 241; /* #6366f1 */
+  --theme-tab-active-dark: 30 64 175; /* #1e40af */
+
+  --theme-tab-inactive-bg-light: 243 244 246; /* #f3f4f6 */
+  --theme-tab-inactive-bg-dark: 30 41 59; /* #1e293b */
+
+  --theme-tab-inactive-text-light: 107 114 128; /* #6b7280 */
+  --theme-tab-inactive-text-dark: 148 163 184; /* #94a3b8 */
+
+  /* Avatar Backgrounds */
+  --theme-avatar-primary-light: 238 242 255; /* #eef2ff */
+  --theme-avatar-primary-dark: 49 46 129; /* #312e81 */
+
+  --theme-avatar-warning-light: 254 243 199; /* #fef3c7 */
+  --theme-avatar-warning-dark: 120 53 15; /* #78350f */
+
+  /* Badge Colors */
+  --theme-badge-success-light: 209 250 229; /* #d1fae5 */
+  --theme-badge-success-dark: 6 78 59; /* #064e3b */
+
+  --theme-badge-error-light: 254 226 226; /* #fee2e2 */
+  --theme-badge-error-dark: 127 29 29; /* #7f1d1d */
+
+  --theme-badge-warning-light: 254 243 199; /* #fef3c7 */
+  --theme-badge-warning-dark: 120 53 15; /* #78350f */
+
+  --theme-badge-info-light: 239 246 255; /* #eff6ff */
+  --theme-badge-info-dark: 30 58 138; /* #1e3a8a */
+
+  /* Empty State Backgrounds */
+  --theme-empty-bg-light: 243 244 246; /* #f3f4f6 */
+  --theme-empty-bg-dark: 30 41 59; /* #1e293b */
+
+  /* Message Box Backgrounds */
+  --theme-message-bg-light: 249 250 251; /* #f9fafb */
+  --theme-message-bg-dark: 15 23 42; /* #0f172a */
+}
+
+.dark {
+  /* Dark mode overrides use the same variables but with different values */
+  --theme-page-bg-light: 15 23 42;
+  --theme-page-bg-dark: 15 23 42;
+
+  --theme-card-bg-light: 30 41 59;
+  --theme-card-bg-dark: 30 41 59;
+
+  --theme-card-border-light: 51 65 85;
+  --theme-card-border-dark: 51 65 85;
+
+  --theme-text-primary-light: 241 245 249;
+  --theme-text-primary-dark: 241 245 249;
+
+  --theme-text-secondary-light: 148 163 184;
+  --theme-text-secondary-dark: 148 163 184;
+
+  --theme-text-tertiary-light: 100 116 139;
+  --theme-text-tertiary-dark: 100 116 139;
+
+  --theme-button-accept-light: 16 185 129;
+  --theme-button-accept-dark: 16 185 129;
+
+  --theme-button-decline-light: 248 113 113;
+  --theme-button-decline-dark: 248 113 113;
+
+  --theme-button-primary-light: 30 64 175;
+  --theme-button-primary-dark: 30 64 175;
+
+  --theme-tab-active-light: 30 64 175;
+  --theme-tab-active-dark: 30 64 175;
+
+  --theme-tab-inactive-bg-light: 30 41 59;
+  --theme-tab-inactive-bg-dark: 30 41 59;
+
+  --theme-tab-inactive-text-light: 148 163 184;
+  --theme-tab-inactive-text-dark: 148 163 184;
+
+  --theme-avatar-primary-light: 49 46 129;
+  --theme-avatar-primary-dark: 49 46 129;
+
+  --theme-avatar-warning-light: 120 53 15;
+  --theme-avatar-warning-dark: 120 53 15;
+
+  --theme-badge-success-light: 6 78 59;
+  --theme-badge-success-dark: 6 78 59;
+
+  --theme-badge-error-light: 127 29 29;
+  --theme-badge-error-dark: 127 29 29;
+
+  --theme-badge-warning-light: 120 53 15;
+  --theme-badge-warning-dark: 120 53 15;
+
+  --theme-badge-info-light: 30 58 138;
+  --theme-badge-info-dark: 30 58 138;
+
+  --theme-empty-bg-light: 30 41 59;
+  --theme-empty-bg-dark: 30 41 59;
+
+  --theme-message-bg-light: 15 23 42;
+  --theme-message-bg-dark: 15 23 42;
+}

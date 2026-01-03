@@ -1,0 +1,485 @@
+---
+alwaysApply: false
+---
+
+# Modern Design Patterns 2026 - Praise Church App
+
+## Design Philosophy
+
+The Praise Church App embraces a **modern, clean, and welcoming** design language that reflects the warmth of community while maintaining professional polish. The design should feel:
+
+- **Contemporary**: Using modern design patterns from 2026 including subtle shadows, elevated cards, and refined color palettes
+- **Accessible**: Clear hierarchy, readable typography, and sufficient contrast
+- **Inviting**: Warm colors, friendly icons, and gentle animations
+- **Professional**: Polished details and consistent styling throughout
+
+## Centralized Theme System
+
+**IMPORTANT**: Always use the centralized theme system instead of hardcoded colors!
+
+### Using the Theme Hook
+
+Import and use the `useTheme` hook in your components:
+
+```typescript
+import { useTheme } from "@/hooks/useTheme";
+
+function MyComponent() {
+  const theme = useTheme();
+  
+  return (
+    <Box style={{ backgroundColor: theme.cardBg }}>
+      <Text style={{ color: theme.textPrimary }}>Hello</Text>
+    </Box>
+  );
+}
+```
+
+### Available Theme Colors
+
+The `useTheme()` hook provides these colors that automatically adapt to light/dark mode:
+
+- `theme.pageBg` - Page background color
+- `theme.cardBg` - Card background color
+- `theme.cardBorder` - Card border color
+- `theme.textPrimary` - Primary text color
+- `theme.textSecondary` - Secondary text color
+- `theme.textTertiary` - Tertiary/subtle text color
+- `theme.buttonAccept` - Accept button color (green)
+- `theme.buttonDecline` - Decline button color (red)
+- `theme.buttonPrimary` - Primary button color (indigo)
+- `theme.tabActive` - Active tab color
+- `theme.tabInactiveBg` - Inactive tab background
+- `theme.tabInactiveText` - Inactive tab text
+- `theme.avatarPrimary` - Primary avatar background
+- `theme.avatarWarning` - Warning avatar background
+- `theme.badgeSuccess` - Success badge background
+- `theme.badgeError` - Error badge background
+- `theme.badgeWarning` - Warning badge background
+- `theme.badgeInfo` - Info badge background
+- `theme.emptyBg` - Empty state background
+- `theme.messageBg` - Message box background
+
+### Changing Theme Colors
+
+To change colors app-wide, edit `/hooks/useTheme.ts`:
+
+1. Update the color values in `lightTheme` or `darkTheme` objects
+2. All components using `useTheme()` will automatically update
+3. No need to search and replace colors throughout the codebase!
+
+### Theme Files
+
+- **Theme Hook**: `/hooks/useTheme.ts` - JavaScript theme definitions
+- **CSS Variables**: `/global.css` - CSS variable definitions (for web)
+- **Tailwind Config**: `/tailwind.config.js` - Tailwind theme extensions
+
+## Modern Design Patterns (2026)
+
+### Elevated Card Design
+
+- **Always use white cards with subtle shadows** for depth (not flat borders)
+- Shadow specifications:
+  ```javascript
+  style={{
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2-4 },
+    shadowOpacity: 0.06-0.08,
+    shadowRadius: 8-12,
+    elevation: 3-4  // Android
+  }}
+  ```
+- Rounded corners: `rounded-2xl` (16px) for major cards, `rounded-xl` (12px) for smaller elements
+- Border: Only use `borderWidth: 1, borderColor: '#f3f4f6'` for very subtle definition, never thick borders
+
+### Background & Layout
+
+- **Use off-white backgrounds** (`#fafafa` or `#f9fafb`) instead of pure white for better visual comfort
+- **Dark mode backgrounds**: Use `#0f172a` for page backgrounds in dark mode
+- White cards (`#ffffff`) on light gray backgrounds create natural elevation and depth
+- **Dark mode cards**: Use `#1e293b` for card backgrounds in dark mode
+- **Avoid flat gray cards** - use white cards with shadows instead for a premium feel
+- Pages should use: `style={{ backgroundColor: isDark ? '#0f172a' : '#fafafa' }}`
+
+### Icon Treatment
+
+- Icons should be placed in **colored circular/rounded backgrounds**
+- Background colors should be light tints (100-200 level) of the icon color
+- Examples:
+  - Primary actions: `backgroundColor: '#eef2ff'`, icon color: `#6366f1` (indigo)
+  - Success/growth: `backgroundColor: '#f0fdf4'`, icon color: `#10b981` (green)
+  - Warning/attention: `backgroundColor: '#fef3c7'`, icon color: `#f59e0b` (amber)
+  - Info: `backgroundColor: '#eff6ff'`, icon color: `#3b82f6` (blue)
+- Icon container: `rounded-xl p-3` (12px border radius, 12px padding)
+- Icon sizes: 24-32px for feature icons, 20-22px for UI actions, 16-20px for small icons
+- **Dark mode icon backgrounds**: Use darker tints (e.g., `#312e81` for indigo, `#78350f` for amber)
+
+### Avatar Initials
+
+- Use **rounded square avatars** (not circles) for a modern look: `borderRadius: 12` (not 999)
+- Size: `48x48px` for member cards, `40x40px` for smaller contexts
+- Background colors: Match icon background color system (light tints)
+- Text: Uppercase initials, `fontSize: 16`, `fontWeight: '600'`, matching icon color
+- Example:
+  ```javascript
+  style={{
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#eef2ff', // or '#312e81' for dark mode
+    alignItems: 'center',
+    justifyContent: 'center',
+  }}
+  ```
+
+## Color System (2026 Palette)
+
+### Primary Colors
+
+- **Indigo/Primary**: `#6366f1` (vibrant, trustworthy, main actions)
+- **Success/Green**: `#10b981` (growth, positive actions, completion)
+- **Amber/Warning**: `#f59e0b` (attention, highlights, important info)
+- **Blue/Info**: `#3b82f6` (informational messages, neutral actions)
+
+### Neutral Colors
+
+- **Text Dark**: `#111827` and `#1f2937` (headings, important text)
+- **Text Medium**: `#6b7280` (body text, descriptions, secondary information)
+- **Text Light**: `#9ca3af` (subtle text, placeholders, disabled states)
+- **Backgrounds**:
+  - Page background: `#fafafa` or `#f9fafb` (light), `#0f172a` (dark)
+  - Card background: `#ffffff` (light), `#1e293b` (dark)
+  - Subtle sections: `#f3f4f6` (light), `#1e293b` (dark)
+  - Borders: `#e5e7eb` or `#f3f4f6` (light), `#334155` (dark)
+- **Dark Mode Text Colors**:
+  - Primary text: `#f1f5f9`
+  - Secondary text: `#94a3b8`
+  - Tertiary text: `#64748b`
+
+### Color Tints for Icon Backgrounds
+
+- Indigo 100: `#eef2ff`
+- Green 50: `#f0fdf4`
+- Amber 100: `#fef3c7`
+- Blue 50: `#eff6ff`
+- Gray 100: `#f3f4f6`
+
+## Typography Hierarchy (2026)
+
+### Font Weights & Sizes
+
+- **Page Headings (H1)**:
+  - Size: `text-5xl` (48px)
+  - Weight: `font-extrabold`
+  - Color: `#1f2937`
+  - Use for: Main page titles like "Welcome Back", "Get Started"
+
+- **Page Titles (H1)**:
+  - Size: `text-3xl` (30px)
+  - Weight: `font-bold`
+  - Color: `#111827` (light), `#f1f5f9` (dark)
+  - Use for: Main page titles like "Members", "Settings"
+  - Subtitle: `text-base`, `#6b7280` (light), `#94a3b8` (dark)
+
+- **Section Headings (H2)**:
+  - Size: `text-3xl` (30px)
+  - Weight: `font-bold`
+  - Color: `#111827` (light), `#f1f5f9` (dark)
+  - Use for: Major section breaks
+
+- **Card Titles**:
+  - Size: `text-base` (16px) for member/item names
+  - Weight: `font-semibold` or `font-bold`
+  - Color: `#111827` (light), `#f1f5f9` (dark)
+  - Line height: `lineHeight: 22` for better readability
+  - Use for: Card headers, member names, item titles
+
+- **Body Text**:
+  - Size: `text-base` (16px)
+  - Weight: `font-normal`
+  - Color: `#6b7280`
+  - Line height: `lineHeight: 24`
+  - Use for: Descriptions, explanatory text
+
+- **Small Text**:
+  - Size: `text-sm` (14px)
+  - Weight: `font-medium` or `font-normal`
+  - Color: `#6b7280`
+  - Line height: `lineHeight: 20`
+  - Use for: Helper text, card descriptions
+
+- **Button Text**:
+  - Size: `text-sm` (14px)
+  - Weight: `font-semibold` or `font-bold`
+  - Use for: Primary actions
+
+### Line Height Best Practices
+
+- Body text (base): `lineHeight: 24`
+- Small text: `lineHeight: 20`
+- Extra small: `lineHeight: 18`
+- Headings: Can be tighter but never cramped
+
+## Button & Interactive Elements
+
+### Primary Buttons
+
+- Use the default primary button styling from Gluestack
+- Size: `size="lg"` for important actions
+- Loading states: Show spinner with `<ButtonSpinner />`
+- Text: `font-semibold` or `font-bold`
+
+### Selection Cards (TouchableOpacity + Box)
+
+- Use `TouchableOpacity` with `activeOpacity={0.7}` for press feedback
+- Card style:
+  ```javascript
+  className="rounded-xl" // 12px border radius
+  style={{
+    backgroundColor: isDark ? '#1e293b' : '#ffffff',
+    padding: 16, // p-4
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: isDark ? 0.3 : 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: isDark ? '#334155' : '#f3f4f6',
+  }}
+  ```
+- Internal padding: `p-4` (16px) for member/list cards
+- Gap between elements: `gap-3` (12px)
+- Include chevron icon on the right if clickable: `#64748b` (light), `#64748b` (dark)
+
+### Link/Text Buttons
+
+- Color: Use primary color `#6366f1`
+- Weight: `font-semibold`
+- Size: `text-sm`
+- Include back arrows in accent colors
+
+### Tab/Segmented Control
+
+- Container: Elevated white card with subtle shadow and border
+- Background: `#ffffff` (light), `#1e293b` (dark)
+- Border: `borderWidth: 1`, `borderColor: '#f3f4f6'` (light), `'#334155'` (dark)
+- Border radius: `rounded-xl` (12px)
+- Internal padding: `p-1` (4px gap between tabs)
+- Active tab:
+  - Background: `#6366f1` (light), `#1e40af` (dark)
+  - Text color: `#ffffff`
+  - Border radius: `rounded-[10px]` (slightly smaller than container)
+  - Padding: `py-3 px-4` (12px vertical, 16px horizontal)
+- Inactive tab:
+  - Background: `transparent`
+  - Text color: `#6b7280` (light), `#94a3b8` (dark)
+  - Same padding as active
+- Icon size: `18px` for tab icons
+- TouchableOpacity: `activeOpacity={0.7}` for press feedback
+- Example:
+  ```javascript
+  <Box className="rounded-xl" style={{
+    backgroundColor: isDark ? '#1e293b' : '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: isDark ? 0.3 : 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: isDark ? '#334155' : '#f3f4f6',
+  }}>
+    <HStack className="gap-1 p-1">
+      {/* Tab buttons */}
+    </HStack>
+  </Box>
+  ```
+
+### Search Bar
+
+- Container: Elevated white card matching tab switcher style
+- Border radius: `rounded-xl` (12px)
+- Internal layout: `HStack` with icon, input, and optional clear button
+- Padding: `px-4 py-3` (16px horizontal, 12px vertical)
+- Icon: Search icon `20px`, color `#9ca3af` (light), `#94a3b8` (dark)
+- Input: `flex-1`, `fontSize: 15`, full color for text
+- Placeholder: `#9ca3af` (light), `#64748b` (dark)
+- Clear button: Close circle icon `20px`, appears when text exists
+- Gap between elements: `gap-3` (12px)
+
+### Filter Chips
+
+- Container: `HStack` with `gap-2` and `flexWrap: 'wrap'`
+- Chip style:
+  - Padding: `py-1.5 px-3` (6px vertical, 12px horizontal)
+  - Border radius: `rounded-lg` (8px)
+  - Border: `borderWidth: 1`
+- Active chip:
+  - Background: `#6366f1` (light), `#1e40af` (dark)
+  - Border: Same as background
+  - Text: `#ffffff`, `fontSize: 12`, `fontWeight: '600'`, `letterSpacing: 0.3`
+- Inactive chip:
+  - Background: `#f3f4f6` (light), `#1e293b` (dark)
+  - Border: `#e5e7eb` (light), `#334155` (dark)
+  - Text: `#6b7280` (light), `#94a3b8` (dark)
+- TouchableOpacity: `activeOpacity={0.7}`
+
+## Information Boxes & Alerts
+
+### Info Boxes
+
+- Use colored left border accent (3px)
+- Light background in matching color family
+- Icon in accent color
+- Example:
+  ```javascript
+  className="rounded-xl p-4"
+  style={{
+    backgroundColor: '#eff6ff',
+    borderLeftWidth: 3,
+    borderLeftColor: '#3b82f6',
+  }}
+  ```
+
+### Error Boxes
+
+- Similar pattern with red accent
+- Background: `#fef2f2`
+- Border: `#ef4444`
+- Icon: Alert circle in red
+
+## Form Design
+
+### Form Cards
+
+- Wrap form sections in elevated white cards
+- Each major section (Personal Info, Church Info) gets its own card
+- Card header with icon + title + description
+- Internal spacing: `gap-5` between form fields
+
+### Input Fields
+
+- Use Gluestack Input components with `variant="outline"` and `size="lg"`
+- Labels: `text-sm font-medium` in `#374151`
+- Spacing: `mt-2` between label and input
+- Error messages: `mt-1` below input in red
+
+### Form Labels
+
+- Always include labels (no placeholder-only inputs)
+- Required fields: Add red asterisk `<Text className="text-error-500"> *</Text>`
+- Optional fields: Add "(Optional)" in lighter color below label
+
+## Spacing & Layout (Modern)
+
+### Vertical Spacing
+
+- Between cards: `gap-6` (24px)
+- Between form fields: `gap-5` (20px)
+- Between tightly related items: `gap-2` or `gap-3`
+- Section headers to content: `mb-5` or `mb-6`
+
+### Horizontal Spacing
+
+- Icon to text: `gap-3` or `gap-4`
+- Button groups: `gap-3` minimum
+- Card internal padding: `p-6` for major cards, `p-4` for smaller ones
+
+### Page Padding
+
+- Standard: `px-6` horizontal (24px)
+- Top: `pt-6` for page headers (24px)
+- Bottom: `pb-8` for comfortable scrolling space (32px)
+- Between sections: `mb-4` (16px) for related sections, `mb-6` (24px) for major breaks
+
+## Animation Guidelines
+
+### Entrance Animations
+
+- Use `FadeIn` and `FadeInDown` from react-native-reanimated
+- Stagger delays by 100-200ms for sequential elements
+- Duration: 500-600ms for smooth but not slow animations
+- Example: First element 100ms delay, second 200ms delay
+
+### Interactive Animations
+
+- TouchableOpacity: `activeOpacity={0.7}` for clear press feedback
+- Avoid jarring scale or transform animations on press
+- Keep interactions smooth and responsive
+- Use `cursor-pointer` class for web compatibility
+
+## Accessibility & Touch Targets
+
+### Touch Target Sizes
+
+- Minimum button height: 44px
+- Recommended card padding: `p-5` or `p-6` for easy tapping
+- Icon-only buttons: Minimum 40x40px touch area
+
+### Contrast
+
+- Ensure text on backgrounds meets WCAG AA standards
+- Body text minimum: 4.5:1 contrast ratio
+- Large text minimum: 3:1 contrast ratio
+
+### Focus States
+
+- Ensure keyboard navigation works
+- Visible focus indicators for accessibility
+
+## Empty States
+
+- Container: Centered `VStack` with `py-20` (80px vertical padding)
+- Icon container:
+  - Size: `padding: 20` (80px total with icon)
+  - Border radius: `borderRadius: 999` (fully rounded)
+  - Background: `#f3f4f6` (light), `#1e293b` (dark)
+  - Icon size: `48px`
+  - Icon color: `#9ca3af` (light), `#64748b` (dark)
+- Title: `text-xl font-bold`, `mb-2`, primary text color
+- Description: `text-sm`, `max-w-xs`, secondary text color, centered
+- Context-aware: Different messages for "no data" vs "no search results"
+
+## Badges & Status Indicators
+
+- Style: Rounded rectangle (not pill), `borderRadius: 6`
+- Padding: `px-2.5 py-1` (10px horizontal, 4px vertical)
+- Text: `fontSize: 11`, `fontWeight: '600'`, `letterSpacing: 0.3`
+- Colors: Match semantic meaning (green for success, amber for pending, etc.)
+- Examples:
+  - Role badges: Match role hierarchy colors
+  - Status badges: Pending (amber), Accepted (green), Declined (red)
+
+## Don'ts - What to Avoid
+
+❌ **Don't use flat bordered cards** - Use white cards with shadows instead
+❌ **Don't use pure white backgrounds** - Use `#fafafa` or similar
+❌ **Don't use gray card backgrounds** - White cards on gray page background instead
+❌ **Don't use thick borders** - Use subtle shadows for depth
+❌ **Don't use plain icon circles** - Add colored backgrounds to icons or use avatar initials
+❌ **Don't use small touch targets** - Minimum 44px height for buttons
+❌ **Don't use harsh shadows** - Keep shadows subtle (opacity 0.06-0.08)
+❌ **Don't overuse colors** - Stick to the defined color system
+❌ **Don't crowd elements** - Generous spacing is modern and readable
+❌ **Don't use gradient buttons** - Use solid colors with proper contrast
+❌ **Don't use circular avatars** - Use rounded squares (12px radius) for modern look
+❌ **Don't forget dark mode** - Always provide dark mode color variants
+
+## Do's - Best Practices
+
+✅ **Do use elevated white cards** with subtle shadows
+✅ **Do use off-white page backgrounds** (#fafafa for light, #0f172a for dark)
+✅ **Do use colored icon backgrounds** with light tints
+✅ **Do use avatar initials** in rounded square containers (12px radius)
+✅ **Do use clear typography hierarchy** with bold headings
+✅ **Do use generous spacing** between elements (gap-3, gap-4, mb-4, mb-6)
+✅ **Do use rounded corners** (rounded-xl for 12px, rounded-2xl for 16px)
+✅ **Do provide clear visual feedback** on interactions (activeOpacity={0.7})
+✅ **Do use semantic colors** purposefully (green for success, amber for pending, etc.)
+✅ **Do implement search and filtering** with proper UI patterns
+✅ **Do use tab switchers** with segmented control pattern
+✅ **Do test on both iOS and Android** for consistency
+✅ **Do maintain visual consistency** across all screens
+✅ **Do support dark mode** with proper color variants
+✅ **Do use proper line heights** (22 for titles, 20 for body text)
+✅ **Do use filter chips** for category/role filtering

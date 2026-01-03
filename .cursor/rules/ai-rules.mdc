@@ -1,0 +1,1141 @@
+---
+alwaysApply: true
+---
+
+# AI Development Rules - Praise Church App
+
+## Tech Stack
+
+- **Framework**: React Native with Expo
+- **Styling**: NativeWind (Tailwind CSS for React Native)
+- **UI Components**: Gluestack UI
+- **Language**: TypeScript (strict mode)
+- **State Management**: React Context API + TanStack Query
+- **Navigation**: Expo Router (file-based routing)
+- **Data Fetching**: TanStack Query v5 with persistence
+- **Backend**: Supabase (PostgreSQL, Auth, Storage)
+- **Code Formatting**: Prettier
+
+## Technology Updates & Best Practices
+
+- **Current Date Context**: Always reference the current date when providing solutions (January 2026)
+- **Latest Versions**: Use the most recent stable versions of libraries and frameworks available as of January 2026
+- **Modern Patterns**: Implement the latest React Native, Expo, and TypeScript best practices from 2025-2026
+- **Deprecated Features**: Avoid patterns, APIs, or libraries that were deprecated in 2024 or earlier
+- **Stay Current**: When suggesting packages, features, or solutions, prioritize those that are actively maintained and relevant in 2026
+- **Version Awareness**: If a package or feature has been updated significantly since 2024, use the 2025-2026 version and syntax
+- **Documentation**: Reference the latest documentation and API changes from 2025-2026 releases
+
+### Context7 MCP for Up-to-Date Documentation
+
+Use [Context7 MCP](https://github.com/upstash/context7) to access current, version-specific documentation for libraries and frameworks. Context7 prevents outdated code generation and hallucinated APIs by fetching documentation directly from the source.
+
+**When to Use Context7:**
+
+- Setting up or configuring a new library (React Native libraries, Expo modules, etc.)
+- Working with unfamiliar APIs or packages
+- Need to verify current API methods and syntax
+- Implementing features with third-party services (Supabase, Firebase, etc.)
+- Questions about library-specific best practices
+
+**When NOT to Use Context7:**
+
+- Basic TypeScript/JavaScript syntax questions
+- General React Native concepts already known
+- Project-specific code that's already in the codebase
+- Simple refactoring tasks
+- Questions about the Praise app's custom code
+
+**How to Use Context7:**
+
+1. **Use MCP Tools Directly**: Call the Context7 MCP tools when you need documentation:
+   - `mcp_context7_resolve-library-id`: First, resolve the library name to get its Context7 ID
+   - `mcp_context7_query-docs`: Then query the docs using the library ID and your specific question
+
+2. **With Known Library ID**: If you already know the library ID (format: `/org/project` or `/org/project/version`), skip the resolve step and go directly to `query-docs`:
+
+   ```
+   /expo/expo
+   /react-native-community/async-storage
+   /gluestack/gluestack-ui
+   /vercel/next.js/v14.3.0
+   ```
+
+3. **With Version Specificity**: When querying, mention the specific version if needed in your query parameter
+
+**Available Context7 MCP Tools:**
+
+- `mcp_context7_resolve-library-id`: Resolves library name to Context7-compatible ID
+  - Parameters: `query` (user's question), `libraryName` (library to search for)
+  - Use this first to find the correct library ID
+- `mcp_context7_query-docs`: Retrieves documentation using library ID
+  - Parameters: `libraryId` (exact Context7 ID), `query` (specific question about the library)
+  - Use this to get actual documentation and code examples
+
+**Best Practices:**
+
+- Only invoke Context7 when you actually need external library documentation
+- Don't invoke for every single response - be selective and purposeful
+- Prefer direct library IDs when known to skip the matching step
+- Cache knowledge from Context7 responses for the current session
+- Use version-specific queries when working with particular package versions
+
+## Code Quality Standards
+
+### TypeScript
+
+- Use strict TypeScript with proper typing - no `any` types unless absolutely necessary
+- Define interfaces for all props, state, and API responses
+- Use type inference where possible to reduce verbosity
+- Create shared types in `types/` directory for cross-feature usage
+- Use discriminated unions for complex state management
+- Prefer `interface` over `type` for object shapes
+- Use `type` for unions, intersections, and utility types
+- **Use `undefined` instead of `null` for optional values** - TypeScript optional properties (`field?: string`) allow `string | undefined`, not `string | null`
+  - ✅ `value || undefined`
+  - ❌ `value || null`
+
+### Component Architecture
+
+- Functional components only with hooks
+- Keep components small and focused (< 250 lines)
+- Extract complex logic into custom hooks
+- Use composition over prop drilling
+- Implement proper error boundaries for error handling
+- Prefer controlled components over uncontrolled
+
+### File Organization & Folder Structure
+
+#### Project Structure Overview
+
+```
+praise-app/
+├── app/
+│   ├── (auth)/                    # Authentication route group
+│   │   ├── _layout.tsx           # Auth layout wrapper
+│   │   ├── login/
+│   │   │   ├── index.tsx         # Login page
+│   │   │   ├── _components/      # Login-specific components
+│   │   │   └── _hooks/           # Login-specific hooks
+│   │   └── register/
+│   │       ├── index.tsx
+│   │       ├── _components/
+│   │       └── _hooks/
+│   │
+│   ├── (dashboard)/               # Dashboard route group
+│   │   ├── _layout.tsx           # Dashboard layout with navigation
+│   │   ├── home/
+│   │   │   ├── index.tsx         # Home page
+│   │   │   ├── _components/      # Home-specific components
+│   │   │   └── _hooks/           # Home-specific hooks
+│   │   ├── members/
+│   │   │   ├── index.tsx
+│   │   │   ├── [id].tsx          # Member detail page
+│   │   │   ├── _components/
+│   │   │   └── _hooks/
+│   │   ├── teams/
+│   │   │   ├── index.tsx
+│   │   │   ├── _components/
+│   │   │   └── _hooks/
+│   │   └── settings/
+│   │       ├── index.tsx
+│   │       ├── _components/
+│   │       └── _hooks/
+│   │
+├── components/                    # Global/shared components
+│   ├── ui/                       # Base UI components (buttons, inputs, etc.)
+│   └── common/                   # Common business components
+│
+├── hooks/                         # Global/shared hooks
+│   ├── useAuth.ts
+│   ├── useChurch.ts
+│   └── useToast.ts
+│
+├── providers/                     # React context providers
+│   └── QueryProvider.tsx
+│
+├── services/                      # API services and business logic
+│   ├── api/
+│   │   ├── baseService.ts        # Base service with generic CRUD operations
+│   │   ├── authService.ts
+│   │   ├── churchService.ts
+│   │   ├── memberService.ts
+│   │   └── teamService.ts
+│   ├── supabase/
+│   │   └── client.ts             # Supabase client configuration
+│   └── queryKeys.ts              # TanStack Query key factory
+│
+├── types/                         # Global TypeScript types
+│   ├── auth.ts
+│   ├── church.ts
+│   ├── member.ts
+│   └── team.ts
+│
+├── constants/                     # App-wide constants
+│   └── api.ts
+│
+└── utils/                         # Utility functions
+    ├── formatters.ts
+    └── validators.ts
+```
+
+#### Folder Structure Rules
+
+**Route Groups & Layouts**
+
+- Use route groups like `(auth)` and `(dashboard)` to organize related pages with shared layouts
+- Each route group should have a `_layout.tsx` for shared UI (navigation, headers, etc.)
+- Route groups allow logical separation without affecting URL structure
+- When defining Stack.Screen components, ALWAYS use the full path: `name="folder/index"` not `name="folder"`
+
+**Page-Specific Organization**
+
+- Every feature page folder (e.g., `home/`, `members/`, `teams/`) MUST contain:
+  - `index.tsx` - The main page component
+  - `_components/` - Components used ONLY by this page (underscore prefix prevents Expo Router from treating as routes)
+  - `_hooks/` - Custom hooks used ONLY by this page (underscore prefix prevents Expo Router from treating as routes)
+- Prefix with underscore (`_components`, `_hooks`) to indicate page-private code
+- This keeps page-specific code co-located and prevents it from being mistaken as shared
+- Metro bundler is configured to ignore `_components` and `_hooks` folders to prevent route warnings
+
+**Global/Shared Code**
+
+- `/components/` - Components used across multiple pages/features
+  - Place in `/components/ui/` for base UI elements
+  - Place in `/components/common/` for business-specific shared components
+- `/hooks/` - Hooks used across multiple pages/features
+- Only promote code to global when it's genuinely reusable
+
+**Services Layer**
+
+- All API calls and external service integrations go in `/services/`
+- **All domain services MUST extend BaseService**
+- Set `protected tableName = "table_name"` to enable generic CRUD operations
+- Services are ALWAYS shared and never page-specific
+- BaseService handles:
+  - Generic CRUD operations (get, list, create, update, delete)
+  - Filtering and sorting
+  - Pagination with metadata
+  - Batch operations
+  - Error normalization (Supabase → AppError)
+  - Dev-mode logging
+- Domain-specific services add custom methods beyond CRUD
+- Services should be framework-agnostic (no React hooks inside services)
+- Use TanStack Query to call services from components/hooks
+
+**Types Organization**
+
+- Page-specific types can live in the page file or a `types.ts` in that folder
+- Shared types go in root `/types/` directory
+- Organize by domain (auth, church, member, team, etc.)
+- Export types from index files for clean imports
+
+**Naming Conventions for Folders**
+
+- Route folders: lowercase with hyphens (e.g., `user-profile/`)
+- Route groups: lowercase with hyphens in parentheses (e.g., `(dashboard)/`)
+- Component folders: PascalCase or lowercase (e.g., `_components/`)
+- Private folders: prefix with underscore (e.g., `_components/`, `_hooks/`)
+
+**Import Path Best Practices**
+
+```typescript
+// Page-specific imports (relative)
+import { UserCard } from "./_components/UserCard";
+import { useMembers } from "./_hooks/useMembers";
+
+// Global imports (absolute or relative from root)
+import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/hooks/useAuth";
+import { memberService } from "@/services/api/memberService";
+import { Member } from "@/types/member";
+```
+
+**When to Create vs. Use Existing**
+
+- ✅ Create in `_components/` if component is only used in that page
+- ✅ Create in `_hooks/` if hook contains page-specific logic
+- ✅ Create in `/components/` if component will be used in 2+ pages
+- ✅ Create in `/hooks/` if hook will be used in 2+ pages
+- ✅ Always create services in `/services/` (they're inherently shared)
+- ⚠️ Don't create page-specific services - refactor into a shared service
+- ⚠️ Don't duplicate components - if similar, make the global one more flexible
+
+**File Naming in Folders**
+
+- Components: PascalCase (e.g., `MemberCard.tsx`, `TeamList.tsx`)
+- Hooks: camelCase with `use` prefix (e.g., `useMembers.ts`, `useTeamData.ts`)
+- Services: camelCase with `Service` suffix (e.g., `authService.ts`)
+- Utils: camelCase (e.g., `formatDate.ts`, `validateEmail.ts`)
+- Types: PascalCase or camelCase (e.g., `member.ts`, `apiTypes.ts`)
+
+### Naming Conventions
+
+- Components: PascalCase (`UserProfile.tsx`)
+- Hooks: camelCase with `use` prefix (`useAuth.ts`)
+- Services: camelCase (`authService.ts`)
+- Types/Interfaces: PascalCase (`UserRole`, `ChurchMember`)
+- Constants: UPPER_SNAKE_CASE (`API_BASE_URL`)
+- Files: kebab-case for utilities, PascalCase for components
+- Folders: kebab-case
+
+### Component Structure
+
+```typescript
+// 1. Imports (external, then internal)
+//    - React/React Native imports first
+//    - Third-party libraries
+//    - Local imports (@/components, @/hooks, etc.)
+// 2. Types/Interfaces
+// 3. Component definition
+// 4. Styles (if using StyleSheet)
+// 5. Export (use named exports for components in _components folders, default exports for page components)
+```
+
+**Import Best Practices:**
+
+- Always import `SafeAreaView` from `react-native-safe-area-context`, never from `react-native`
+- Group imports logically (UI components, hooks, services, types)
+- Use absolute imports with `@/` prefix for better maintainability
+
+### React Native & NativeWind Best Practices
+
+- Use NativeWind classes for styling (e.g., `className="flex-1 bg-white"`)
+- Avoid inline styles unless dynamic values required
+- **ALWAYS use `SafeAreaView` from `react-native-safe-area-context`**, never from `react-native` (deprecated)
+  - Import: `import { SafeAreaView } from "react-native-safe-area-context";`
+  - Alternative: use `useSafeAreaInsets` hook for custom implementations
+- Optimize images with proper sizing and formats
+- Use `FlatList` or `FlashList` for long lists (never `map` in ScrollView)
+- Implement proper keyboard handling with `KeyboardAvoidingView`
+- Use platform-specific code when necessary (`Platform.select()`)
+- Always test on both iOS and Android
+- Use Expo's asset system for images and fonts
+
+### Gluestack UI Usage
+
+- Use Gluestack components as base building blocks
+- Customize with NativeWind classes for brand consistency
+- Create wrapper components for frequently used patterns
+- Follow Gluestack's composition patterns
+- Leverage Gluestack's accessibility features
+
+### Performance
+
+- Memoize expensive computations with `useMemo`
+- Memoize callbacks with `useCallback` when passing to child components
+- Use `React.memo` for pure components that render often
+- Implement virtualization for long lists
+- Lazy load heavy components
+- Optimize images and assets
+- Avoid anonymous functions in render methods
+- Use `InteractionManager` for deferred work after animations
+
+### State Management
+
+- Local state with `useState` for component-specific data
+- Context for shared state across component tree (e.g., AuthContext)
+- **TanStack Query for server state** - all data fetching should use TanStack Query
+- Keep state as close to usage as possible
+- Avoid prop drilling beyond 2-3 levels
+- Use reducers for complex state logic
+
+### Data Fetching with TanStack Query
+
+- **Always use TanStack Query for server data** - mutations, queries, caching
+- Configure QueryProvider with persistence using AsyncStorage
+- Use query keys factory from `services/queryKeys.ts`
+- Mutations for write operations (create, update, delete)
+- Queries for read operations (get, list)
+- Configure staleTime and cacheTime appropriately
+  - Default: 5 minutes staleTime, 24 hours cacheTime
+- Use optimistic updates for better UX where appropriate
+
+Example:
+
+```typescript
+const loginMutation = useMutation({
+  mutationFn: async (data) => authService.login(data),
+  onSuccess: () => {
+    toast.success("Welcome back!");
+  },
+  onError: (err) => {
+    toast.error(err.message);
+  },
+});
+```
+
+### API & Data Fetching
+
+- **Use BaseService pattern for all API services** (`services/api/baseService.ts`)
+- All domain services extend BaseService and set `protected tableName`
+- BaseService provides: `get`, `list`, `listPaginated`, `create`, `update`, `delete`, `batchCreate`, `batchUpdate`, `batchDelete`, `count`, `exists`
+- Use typed interfaces from `types/` for all requests and responses
+- Handle errors with AppError class (normalized from Supabase errors)
+- All errors are automatically logged in dev mode
+- Use TanStack Query for data fetching, not direct service calls in components
+
+**BaseService Features:**
+
+- Generic CRUD operations (no need to rewrite for each table)
+- **Automatic user_id injection**: Use `createWithUser()` instead of `create()` to automatically inject the current authenticated user's ID
+- Filtering: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `like`, `ilike`, `in`, `is`
+- Sorting: by any field, ascending/descending
+- Pagination: with metadata (total, totalPages, hasNext, hasPrevious)
+- Batch operations: create/update/delete multiple records
+- Automatic error normalization and logging
+- Protected helper methods: `getCurrentUserId()` - gets authenticated user ID, `injectUserId()` - adds user_id to data
+
+Example Service:
+
+```typescript
+export class ChurchService extends BaseService {
+  protected tableName = "churches";
+
+  async getChurch(id: string): Promise<Church> {
+    return this.get<Church>(id);
+  }
+
+  async searchChurches(term: string): Promise<Church[]> {
+    return this.list<Church>({
+      filters: [{ field: "name", operator: "ilike", value: `%${term}%` }],
+      sort: [{ field: "name", ascending: true }],
+    });
+  }
+}
+
+// For tables with user_id field, use createWithUser():
+export class MembershipRequestService extends BaseService {
+  protected tableName = "church_membership_requests";
+
+  async createRequest(
+    data: CreateMembershipRequestData,
+  ): Promise<MembershipRequest> {
+    // Automatically injects user_id from auth context
+    return this.createWithUser<MembershipRequest, CreateMembershipRequestData>(
+      data,
+    );
+  }
+}
+```
+
+### Error Handling
+
+- **Use AppError class** - all services throw typed AppError instances
+- AppError includes: `code`, `message`, `originalError`, `details`
+- Error codes: `UNKNOWN`, `NETWORK`, `AUTH_*`, `DATABASE_*`, `PERMISSION_DENIED`, `RATE_LIMIT`
+- BaseService automatically normalizes Supabase errors to AppError
+- Show user-friendly error messages in UI
+- Log errors to console in dev mode (automatic in BaseService)
+- Validate user input at form level before submission
+- Use try-catch for async operations
+- Display errors inline for form validation, toasts for general errors
+
+Example:
+
+```typescript
+try {
+  await authService.login(data);
+} catch (err) {
+  if (err instanceof AppError) {
+    if (err.code === AppErrorCode.AUTH_INVALID_CREDENTIALS) {
+      setError("Invalid email or password");
+    }
+  }
+}
+```
+
+### Security
+
+- Never commit API keys or secrets
+- Use environment variables for sensitive data
+- Implement proper authentication flows
+- Store tokens securely (SecureStore for sensitive data)
+- Validate all user inputs
+- Implement proper authorization checks
+- Use HTTPS for all API calls
+- Implement rate limiting on API calls
+
+### Accessibility
+
+- Add proper `accessibilityLabel` to interactive elements
+- Use semantic components from Gluestack
+- Ensure sufficient color contrast
+- Support screen readers
+- Test with accessibility tools
+- Provide haptic feedback for interactions
+
+### Code Style
+
+- No inline comments unless explicitly requested
+- Self-documenting code with clear names
+- DRY principle - extract reusable logic
+- Single responsibility principle
+- Keep functions small and focused
+- Use early returns to reduce nesting
+- Prefer async/await over promise chains
+
+### UI/UX Guidelines
+
+- **Dark mode is the default** - app configured for dark mode by default
+- Use existing platform color scheme for consistency
+- Theme-aware styling with `bg-background-*` and `text-typography-*` classes
+- Add `cursor-pointer` class to all clickable elements
+- Space buttons properly in flex-row layouts (ml-2, ml-3, etc.)
+- Implement loading states for async operations
+- Provide visual feedback for user actions
+- Use haptic feedback on mobile interactions (`expo-haptics`)
+- Follow platform-specific design patterns (iOS vs Android)
+- Implement proper navigation patterns with back buttons
+- **Use toast notifications for success/error feedback** (`useToast` hook)
+- Implement pull-to-refresh where appropriate
+- **Always use `LoadingScreen` component for full-screen loading states** (e.g., authentication, profile fetching, route guards)
+  - Import from `@/components/ui/LoadingScreen`
+  - Provide descriptive messages: `<LoadingScreen message="Loading your profile..." />`
+  - Never use bare `ActivityIndicator` for full-screen loading
+
+### Testing
+
+- No test files should be generated
+- Manual testing on both iOS and Android required
+- Test on various screen sizes
+- Test offline scenarios
+- Test permission flows
+
+### Git & Commits
+
+- Write clear, descriptive commit messages
+- Keep commits atomic and focused
+- Never force push to main/master
+- Use conventional commit format when possible
+
+### Dependencies
+
+- Keep dependencies up to date
+- Prefer well-maintained libraries
+- Check bundle size impact before adding dependencies
+- Use Expo-compatible packages when possible
+- Document why non-standard dependencies are added
+
+### Environment Setup
+
+- Use .env files for environment variables
+- Never commit .env files
+- Provide .env.example with required variables
+- Use different configs for dev/staging/production
+- **All environment variables must be defined** - no fallback values in code
+- Supabase client will throw error if env vars are missing
+- Required variables:
+  - `EXPO_PUBLIC_SUPABASE_URL` - from `supabase status`
+  - `EXPO_PUBLIC_SUPABASE_ANON_KEY` - from `supabase status`
+
+### Supabase Local Development & Seeding
+
+**Creating Auth User Seed Files:**
+
+- When seeding `auth.users`, **ALL token fields must be empty strings (`''`), not NULL**
+- Required empty string fields:
+  - `confirmation_token`, `recovery_token`
+  - `email_change`, `email_change_token_new`, `email_change_token_current`
+  - `phone_change`, `phone_change_token`
+  - `reauthentication_token`
+- Use `::jsonb` cast for `raw_app_meta_data` and `raw_user_meta_data`
+- Use `crypt('password', gen_salt('bf'))` for `encrypted_password`
+- Set `email_confirmed_at` to `NOW()` for confirmed users
+- Always create corresponding entries in `auth.identities` with matching `user_id` and `provider_id`
+- Example:
+
+```sql
+INSERT INTO auth.users (
+  id, instance_id, email, encrypted_password,
+  email_confirmed_at, created_at, updated_at,
+  raw_app_meta_data, raw_user_meta_data,
+  is_super_admin, role, aud,
+  confirmation_token, recovery_token,
+  email_change, email_change_token_new, email_change_token_current,
+  phone_change, phone_change_token, reauthentication_token
+) VALUES (
+  '...uuid...', '00000000-0000-0000-0000-000000000000',
+  'user@example.com', crypt('password123', gen_salt('bf')),
+  NOW(), NOW(), NOW(),
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  '{"full_name":"User Name"}'::jsonb,
+  false, 'authenticated', 'authenticated',
+  '', '', '', '', '', '', '', ''
+);
+```
+
+## Senior Developer Mindset
+
+- Think about scalability from the start
+- Consider mobile-specific constraints (memory, battery, network)
+- Write maintainable code for future developers
+- Balance perfection with pragmatism
+- Question requirements when unclear
+- Suggest improvements proactively
+- Consider edge cases and error scenarios
+- Think about offline-first architecture
+- Plan for multi-tenancy from the beginning
+- Consider real-time features and their implications
+- Think about data synchronization strategies
+- Plan authentication and authorization architecture
+- Consider push notification strategies
+- Think about file upload and storage solutions
+
+## Common Pitfalls to Avoid
+
+1. **Never use deprecated APIs:**
+   - ❌ `SafeAreaView` from `react-native` (deprecated)
+   - ✅ `SafeAreaView` from `react-native-safe-area-context`
+
+2. **Expo Router Stack.Screen declarations:**
+   - ❌ `<Stack.Screen name="home" />` (causes layout warnings)
+   - ✅ `<Stack.Screen name="home/index" />` (correct path)
+
+3. **Metro bundler and Expo Router:**
+   - Folders prefixed with underscore (`_components`, `_hooks`) are automatically ignored as routes by Expo Router
+   - Do NOT add them to metro.config.js blockList - this prevents imports entirely
+   - The underscore prefix is sufficient for Expo Router to skip them during route generation
+   - If you see warnings about missing default exports in `_components` or `_hooks`, they are harmless and can be ignored
+   - After making structural changes, clear cache: `rm -rf node_modules/.cache .expo`
+   - Restart the dev server to pick up changes
+
+4. **Import organization:**
+   - Always import from `react-native-safe-area-context` for SafeAreaView
+   - Use absolute imports (`@/`) for internal modules
+   - Group imports logically
+
+5. **Error handling:**
+   - Always use BaseService for API calls
+   - Return typed errors (AppError) with appropriate error codes
+   - Provide user-friendly error messages
+
+6. **TypeScript null vs undefined:**
+   - ❌ Use `null` for optional values
+   - ✅ Use `undefined` for optional values (matches TypeScript optional properties)
+   - Example: `data.field || undefined` not `data.field || null`
+
+7. **Services pattern:**
+   - ❌ Writing manual CRUD operations for each table
+   - ✅ Extend BaseService and set `tableName`
+   - ❌ Calling Supabase directly in components
+   - ✅ Use services + TanStack Query
+
+8. **Data fetching:**
+   - ❌ Using `useEffect` + `useState` for data fetching
+   - ✅ Use TanStack Query mutations and queries
+   - ❌ Direct service calls in components
+   - ✅ Wrap service calls in `useMutation` or `useQuery`
+
+## Role-Based Access Control (RBAC) System
+
+### Architecture Overview
+
+The app uses a **dynamic, permission-based RBAC system** where permissions are granted to roles, and roles are assigned to users within specific churches. This is a church-scoped multi-tenancy system.
+
+**Key Concepts:**
+
+- **System Roles**: Built-in roles (Pastor, Member) created automatically when a church is created
+- **Custom Roles**: Church admins can create additional roles (e.g., Treasurer, Worship Leader)
+- **Permissions**: Granular access controls (e.g., `membership_requests:read`, `roles:create`)
+- **Church-Scoped**: All permissions are evaluated within the context of a specific church
+- **Database-Enforced**: Security is enforced at the database level via RLS and RPC functions
+
+### Database Schema
+
+**Tables:**
+
+1. **`public.permissions`** - System-wide permission definitions
+   - `key` (text, unique): Permission identifier (e.g., `members:read`)
+   - `name` (text): Human-readable name
+   - `description` (text): What this permission allows
+   - Created via migration, not by users
+
+2. **`public.church_roles`** - Roles within each church
+   - `id` (uuid, PK)
+   - `church_id` (uuid, FK to churches)
+   - `name` (text): Role name (e.g., "Pastor", "Member")
+   - `description` (text): Role description
+   - `is_system_role` (boolean): If true, cannot be deleted
+   - System roles are created automatically via trigger
+
+3. **`public.church_role_permissions`** - Junction table (roles ↔ permissions)
+   - `role_id` (uuid, FK to church_roles)
+   - `permission_key` (text, FK to permissions)
+   - Defines which permissions each role has
+
+4. **`public.user_church_roles`** - User role assignments
+   - `user_id` (uuid, FK to users)
+   - `church_id` (uuid, FK to churches)
+   - `role_id` (uuid, FK to church_roles)
+   - Assigns roles to users within their church
+
+### Database Functions & Triggers
+
+**1. `public.has_permission(check_church_id UUID, permission_key TEXT)`**
+
+- Returns `boolean` - whether current user has the specified permission
+- **SECURITY DEFINER** - runs with elevated privileges to query across tables
+- Used in RLS policies to enforce permissions
+- Example: `public.has_permission(NEW.church_id, 'members:update')`
+
+**2. `public.get_user_permissions(p_user_id UUID, p_church_id UUID)`**
+
+- Returns `jsonb` with `{permissions: [...], roles: [...]}`
+- Called from client to fetch user's permissions
+- Used by `usePermissions` hook
+
+**3. `public.create_default_church_roles(target_church_id UUID)`**
+
+- Creates default "Pastor" and "Member" roles for a church
+- Sets up default permissions for each role
+- Called automatically by trigger
+
+**4. `public.assign_pastor_role_to_creator()`**
+
+- Trigger function that runs AFTER INSERT on `public.churches`
+- Calls `create_default_church_roles()` to create roles
+- Assigns "Pastor" role to the church creator
+
+**5. `public.accept_membership_request(request_id UUID)`**
+
+- **SECURITY DEFINER** RPC function to accept a membership request
+- Bypasses RLS to update `church_id` on the user
+- Checks permission: `public.has_permission(church_id, 'membership_requests:accept')`
+- Automatically assigns default "Member" role to accepted user
+
+### Default Permissions
+
+The system comes with these default permissions (defined in migration):
+
+**Members:**
+
+- `members:read` - View church members
+- `teams:read` - View teams
+
+**Membership Requests:**
+
+- `membership_requests:read` - View membership requests
+- `membership_requests:accept` - Accept requests
+- `membership_requests:decline` - Decline requests
+
+**Roles & Permissions:**
+
+- `roles:read` - View roles
+- `roles:create` - Create custom roles
+- `roles:update` - Edit roles
+- `roles:delete` - Delete custom roles
+- `roles:assign` - Assign roles to members
+
+**Church Management:**
+
+- `church:read` - View church info
+- `church:update` - Update church settings
+
+### Client-Side Implementation
+
+**1. Permission Service (`services/api/permissionService.ts`)**
+
+```typescript
+export class PermissionService extends BaseService {
+  async getUserPermissions(
+    userId: string,
+    churchId: string,
+  ): Promise<UserPermissions> {
+    const { data } = await this.supabase.rpc("get_user_permissions", {
+      p_user_id: userId,
+      p_church_id: churchId,
+    });
+    return data;
+  }
+
+  async getChurchRoles(churchId: string): Promise<ChurchRole[]> {
+    return this.list({
+      filters: [{ field: "church_id", operator: "eq", value: churchId }],
+    });
+  }
+}
+```
+
+**2. usePermissions Hook (`hooks/usePermissions.ts`)**
+
+```typescript
+export function usePermissions() {
+  const { user } = useAuth();
+  const { data: profile } = useUserProfile(user?.id);
+
+  const query = useQuery({
+    queryKey: queryKeys.permissions.byUserChurch(user.id, profile.church_id),
+    queryFn: () =>
+      permissionService.getUserPermissions(user.id, profile.church_id),
+    enabled: !!user?.id && !!profile?.church_id,
+  });
+
+  const can = (permissionKey: string): boolean => {
+    return query.data?.permissions.includes(permissionKey) || false;
+  };
+
+  return { permissions, roles, can, hasRole, canAny, canAll };
+}
+```
+
+**3. Using Permissions in Components**
+
+```typescript
+export default function MembersPage() {
+  const { can } = usePermissions();
+  const canViewInvitations = can('membership_requests:read');
+
+  return (
+    <View>
+      {canViewInvitations && <InvitationsTab />}
+    </View>
+  );
+}
+```
+
+### Row Level Security (RLS) Policies
+
+**Example: Church Membership Requests**
+
+```sql
+CREATE POLICY "Users can view requests for their church"
+ON public.church_membership_requests
+FOR SELECT
+USING (
+  public.has_permission(church_id, 'membership_requests:read')
+);
+
+CREATE POLICY "Users with permission can update requests"
+ON public.church_membership_requests
+FOR UPDATE
+USING (
+  public.has_permission(church_id, 'membership_requests:accept')
+  OR public.has_permission(church_id, 'membership_requests:decline')
+);
+```
+
+**Key Points:**
+
+- All policies use `public.has_permission()` instead of hard-coded role checks
+- Never check `users.role` directly in policies (that's the old "system role" for routing)
+- RLS policies are church-scoped via `church_id` parameter
+
+### Seeding RBAC Data
+
+**File: `supabase/seed/05_assign_roles.sql`**
+
+This file must:
+
+1. Check if default roles exist for each church
+2. Create default roles if missing (call `public.create_default_church_roles()`)
+3. Explicitly assign roles to test users via `INSERT INTO public.user_church_roles`
+
+**Critical:** Always use explicit `INSERT` for `user_church_roles`, don't rely only on triggers, as triggers may not run during seeding depending on context.
+
+Example:
+
+```sql
+DO $$
+DECLARE
+  pastor_role_id UUID;
+  member_role_id UUID;
+BEGIN
+  -- Create default roles if missing
+  PERFORM public.create_default_church_roles('10000000-0000-0000-0000-000000000001');
+
+  -- Get role IDs
+  SELECT id INTO pastor_role_id FROM public.church_roles
+  WHERE church_id = '10000000-0000-0000-0000-000000000001' AND name = 'Pastor';
+
+  -- Assign Pastor role to pastor@praise.test
+  INSERT INTO public.user_church_roles (user_id, church_id, role_id)
+  VALUES (
+    '00000000-0000-0000-0000-000000000002',
+    '10000000-0000-0000-0000-000000000001',
+    pastor_role_id
+  ) ON CONFLICT DO NOTHING;
+END $$;
+```
+
+### Common RBAC Patterns
+
+**1. Conditional Tab Visibility**
+
+```typescript
+const canViewInvitations = can('membership_requests:read');
+
+<Tabs.Screen
+  name="invitations"
+  options={{ title: "Requests" }}
+  listeners={{
+    tabPress: (e) => {
+      if (!canViewInvitations) e.preventDefault();
+    },
+  }}
+/>
+```
+
+**2. Feature Gating in Settings**
+
+```typescript
+const canManageRoles = can('roles:read');
+
+{canManageRoles && (
+  <TouchableOpacity onPress={() => router.push('/settings/roles')}>
+    <Text>Roles & Permissions</Text>
+  </TouchableOpacity>
+)}
+```
+
+**3. Button Disable State**
+
+```typescript
+<Button
+  disabled={!can('roles:create')}
+  onPress={handleCreateRole}
+>
+  Create Role
+</Button>
+```
+
+### Lessons Learned & Critical Pitfalls
+
+**1. RBAC Data Must Be Explicitly Seeded**
+
+❌ **Problem:** Relying solely on triggers to create roles during seed
+
+- Triggers may not fire during `INSERT` in seed files
+- `pastor@praise.test` had no permissions because roles weren't assigned
+
+✅ **Solution:**
+
+- Always check if roles exist, create them explicitly via `create_default_church_roles()`
+- Manually `INSERT` into `user_church_roles` in seed files
+- Add `RAISE NOTICE` statements for debugging
+
+**2. System Roles vs. RBAC Roles**
+
+❌ **Problem:** Confusing `users.role` (system role for routing) with RBAC roles
+
+- `users.role` should ONLY be used for: `church_admin` (setup church) vs `member` (find church)
+- Never use `users.role` for permission checks
+
+✅ **Solution:**
+
+- Use RBAC permissions (`can('permission:key')`) for ALL feature access
+- Keep `users.role` for routing logic only (setup flow vs member flow)
+- In RLS policies, always use `public.has_permission()`, never check `users.role`
+
+**3. RLS Limitations Require SECURITY DEFINER**
+
+❌ **Problem:** RLS prevents updating another user's data (e.g., `church_id` during accept invitation)
+
+- Regular queries can't bypass RLS even with valid permissions
+
+✅ **Solution:**
+
+- Create `SECURITY DEFINER` RPC functions for privileged operations
+- Check permissions inside the function: `IF NOT public.has_permission(...) THEN RAISE EXCEPTION`
+- Example: `public.accept_membership_request(request_id UUID)`
+
+**4. Nested Routes in Expo Router Require \_layout.tsx**
+
+❌ **Problem:** Adding `settings/roles/` folder caused duplicate "Settings" tabs
+
+- Expo Router treats nested folders as separate routes without a layout
+
+✅ **Solution:**
+
+- Always add `_layout.tsx` to folders with nested routes
+- Use `<Stack>` inside the layout to define nested screens
+- Example: `settings/_layout.tsx` with `<Stack.Screen name="index" />` and `<Stack.Screen name="roles/index" />`
+
+**5. Tab Order Changes with Nested Layouts**
+
+❌ **Problem:** Adding `_layout.tsx` changed the order of tabs in the navbar
+
+✅ **Solution:**
+
+- Add explicit `order` property to tab config
+- Sort routes by order in `CustomTabBar.tsx`:
+  ```typescript
+  const sortedRoutes = [...state.routes].sort((a, b) => {
+    const orderA = tabConfig[a.name.split("/")[0]]?.order || 999;
+    const orderB = tabConfig[b.name.split("/")[0]]?.order || 999;
+    return orderA - orderB;
+  });
+  ```
+
+**6. BaseService Logging Clutter**
+
+❌ **Problem:** Every API call logs to console (e.g., "Fetching users by id")
+
+- Makes debugging difficult with too much noise
+
+✅ **Solution:**
+
+- Comment out the log method body in `BaseService.ts` when not actively debugging
+- Keep the method signature for easy re-enabling
+- Alternatively, add a `ENABLE_SERVICE_LOGGING` env var
+
+**7. Permission Hook Must Handle Loading States**
+
+❌ **Problem:** `can()` returns `false` while permissions are loading
+
+- Causes UI to flicker or show "no access" before data loads
+
+✅ **Solution:**
+
+- Check `isLoading` state from `usePermissions` if immediate decisions are needed
+- Or use skeleton loaders / suspense boundaries
+- For tab visibility, use `useEffect` to redirect after loading completes
+
+**8. Seed File Order Matters**
+
+❌ **Problem:** Seeding roles before permissions table is populated
+
+- Foreign key violations or missing permission keys
+
+✅ **Solution:**
+
+- Ensure migration creates permissions before seeding
+- Seed order in `supabase/config.toml`:
+  1. `01_auth_users.sql` (auth.users)
+  2. `02_users.sql` (public.users)
+  3. `03_churches.sql` (public.churches)
+  4. `04_membership_requests.sql` (public.church_membership_requests)
+  5. `05_assign_roles.sql` (public.user_church_roles)
+
+### UI/UX Guidelines for RBAC
+
+**1. Church Settings Organization**
+
+- Settings page has 2 sections:
+  - **Account** (all users): Profile, Sign Out
+  - **Church Management** (pastors only): Church Info, Roles & Permissions
+
+**2. Members Page Structure**
+
+- Members page shows tabs: Members | Requests
+- "Requests" tab only visible to pastors (`membership_requests:read`)
+- Roles management moved to Settings > Roles & Permissions
+
+**3. Graceful Degradation**
+
+- If user lacks permission, hide the UI element (don't show disabled state)
+- If user tries to access restricted route, redirect to home
+- Use `useEffect` in route components to check permissions and redirect
+
+**4. Loading States**
+
+- Always show loading indicator while permissions are being fetched
+- Don't flash "access denied" if permissions are still loading
+- Use skeleton loaders for permission-gated sections
+
+### Debugging RBAC Issues
+
+**1. Check User Permissions**
+
+```typescript
+const { permissions, roles, isLoading } = usePermissions();
+console.log("Permissions:", permissions);
+console.log("Roles:", roles);
+```
+
+**2. Verify Database State**
+
+```sql
+-- Check user's roles
+SELECT * FROM public.user_church_roles
+WHERE user_id = 'USER_ID' AND church_id = 'CHURCH_ID';
+
+-- Check role permissions
+SELECT crp.*
+FROM public.church_role_permissions crp
+JOIN public.user_church_roles ucr ON crp.role_id = ucr.role_id
+WHERE ucr.user_id = 'USER_ID' AND ucr.church_id = 'CHURCH_ID';
+
+-- Test has_permission function
+SELECT public.has_permission('CHURCH_ID', 'members:read');
+```
+
+**3. Check RPC Function**
+
+```sql
+SELECT public.get_user_permissions('USER_ID', 'CHURCH_ID');
+```
+
+**4. Verify Seed Data**
+
+After `supabase db reset`, check logs for `RAISE NOTICE` messages from `05_assign_roles.sql`.
+
+### Future Enhancements
+
+**Potential features to add:**
+
+1. **Role Management UI**
+   - Create custom roles
+   - Edit role permissions
+   - Assign roles to members
+   - Delete custom roles (not system roles)
+
+2. **Permission Groups**
+   - Group related permissions (e.g., "Members Management")
+   - Bulk assign permission groups to roles
+
+3. **Audit Log**
+   - Track who changed permissions
+   - Track who was assigned/removed from roles
+
+4. **Permission Inheritance**
+   - Role hierarchy (e.g., Pastor inherits all Member permissions)
+
+5. **Temporary Permissions**
+   - Time-limited role assignments
+   - Auto-expire after X days
+
+### Quick Reference
+
+**Check Permission:**
+
+```typescript
+const { can } = usePermissions();
+if (can("members:update")) {
+  /* ... */
+}
+```
+
+**Get All Permissions:**
+
+```typescript
+const { permissions, roles } = usePermissions();
+```
+
+**Hide UI Element:**
+
+```typescript
+{can('roles:create') && <CreateRoleButton />}
+```
+
+**Database Check:**
+
+```sql
+SELECT public.has_permission('church-id', 'permission:key');
+```
+
+**Create New Permission (in migration):**
+
+```sql
+INSERT INTO public.permissions (key, name, description)
+VALUES ('feature:action', 'Feature Action', 'Description of what this allows');
+```
+
+**Assign Permission to Role (in migration):**
+
+```sql
+INSERT INTO public.church_role_permissions (role_id, permission_key)
+SELECT id, 'feature:action'
+FROM public.church_roles
+WHERE name = 'Pastor' AND is_system_role = true;
+```

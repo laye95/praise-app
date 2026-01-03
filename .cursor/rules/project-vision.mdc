@@ -1,0 +1,410 @@
+---
+alwaysApply: false
+---
+
+# Praise - Multi-Tenant Church Management Platform
+
+## Project Overview
+
+Praise is a comprehensive multi-tenant church management mobile application built with React Native. It enables churches to manage their congregations, organize ministry teams, coordinate services, and facilitate communication within their community. The platform is designed to serve multiple independent churches, each with their own isolated data, members, and customizations.
+
+## Core Concept
+
+A centralized platform where multiple churches can register, onboard their members, organize ministry teams, schedule services, and facilitate community engagement through modern mobile-first features. Each church operates independently within the app with complete data isolation and customizable workflows.
+
+## User Roles & Permissions
+
+### Church-Level Roles
+
+- **Church Admin/Pastor**: Full administrative access to church settings, member management, team creation, and all features
+- **Co-Pastor/Elder**: Similar to admin but may have restricted access to sensitive financial data or settings
+- **Team Leader**: Manages specific ministry teams (worship, prayer, etc.) with permissions limited to their team
+- **Team Member**: Access to their assigned teams and general church features
+- **Church Member**: Basic access to church services, events, chat, and prayer requests
+- **Visitor**: Limited guest access to public church information
+
+### System-Level Roles
+
+- **Super Admin**: Platform-level access for Praise administrators to manage church registrations and platform settings
+
+## Phase 1: Core Foundation
+
+### 1.1 Church Registration & Onboarding
+
+- Multi-step registration form for new churches
+  - Church details (name, denomination, location, timezone)
+  - Primary pastor/admin information
+  - Church branding (logo, colors, cover images)
+  - Church size and service schedule preferences
+  - Verification process (email confirmation)
+- Automated church workspace creation with isolated database namespace
+- Initial setup wizard after registration
+- Church profile customization
+
+### 1.2 Church Dashboard
+
+- Overview metrics (total members, active teams, upcoming services)
+- Quick actions (invite members, create teams, schedule services)
+- Recent activity feed
+- Upcoming events calendar
+- Analytics and insights (attendance trends, engagement metrics)
+
+### 1.3 Member Management
+
+- Member invitation system (email/SMS with unique invite links)
+- Member registration flow with profile creation
+- Member directory with search and filtering
+- Member profiles (photo, contact info, join date, teams, attendance history)
+- Role assignment and permission management
+- Bulk actions (import from CSV, mass email)
+- Member status tracking (active, inactive, visitor)
+
+### 1.4 Authentication & Authorization
+
+- Secure authentication flow (email/password, social login options)
+- Role-based access control (RBAC) system
+- Multi-tenancy with proper data isolation
+- Session management and token refresh
+- Password recovery and account security
+
+## Phase 2: Ministry Teams & Coordination
+
+### 2.1 Team/Group Structure
+
+- Create unlimited ministry teams/groups
+- Assign team leaders and members
+- Team-specific permissions and access levels
+- Team directory and member lists
+- Sub-teams support (e.g., "Worship - Youth Band")
+
+### 2.2 Worship Team Module
+
+- **Song Library**
+  - Add songs with lyrics, chords, key, tempo
+  - Tag songs by genre, theme, speed
+  - Link to external resources (YouTube, Spotify)
+  - Search and filter song database
+- **Service Planning**
+  - Create service schedules (Sunday morning, Wednesday night, etc.)
+  - Assign songs to specific service dates
+  - Set song order and transitions
+  - Add service notes and announcements
+- **Team Scheduling**
+  - Assign worship team members to service dates
+  - Define positions (lead vocals, guitar, keys, drums, etc.)
+  - Member availability tracking
+  - Automatic conflict detection
+  - Send reminders and notifications
+- **Rehearsal Coordination**
+  - Schedule rehearsals with location and time
+  - Track attendance
+  - Share rehearsal notes and feedback
+
+### 2.3 Prayer Team Module
+
+- **Prayer Request System**
+  - Members submit prayer requests (public/private/anonymous options)
+  - Categorize requests (health, family, spiritual, financial, etc.)
+  - Urgent request flag with push notifications
+- **Request Assignment**
+  - Notification to all prayer team members when request submitted
+  - "I'll take this one" claim system
+  - Track who's praying for whom
+  - Status updates (praying, answered, ongoing)
+- **Prayer Wall**
+  - Public prayer wall for community prayer
+  - Comment and pray button on requests
+  - Testimony sharing for answered prayers
+- **Prayer Scheduler**
+  - Organize prayer chains
+  - Schedule prayer meetings
+  - Prayer focus topics for the week/month
+
+### 2.4 Hospitality Teams (Hosts, Ushers, Greeters)
+
+- **Service Roster**
+  - Assign hosts/ushers/greeters to specific services
+  - Position assignments (entrance, parking, welcome desk, etc.)
+  - Shift scheduling
+- **Task Checklists**
+  - Pre-service setup checklists
+  - During-service responsibilities
+  - Post-service cleanup tasks
+- **Visitor Tracking**
+  - Record first-time visitors
+  - Collect visitor information
+  - Follow-up assignment to hospitality team
+  - Welcome gift/package tracking
+
+### 2.5 Additional Ministry Teams
+
+- **Media Team**: Service recording, streaming, graphics
+- **Kids Ministry**: Children attendance, volunteer scheduling, curriculum planning
+- **Youth Ministry**: Event planning, small group coordination
+- **Community Outreach**: Mission trips, service projects, community events
+- Each team has customizable features based on their specific needs
+
+## Phase 3: Service & Event Management
+
+### 3.1 Service Scheduling
+
+- Create recurring services (weekly, bi-weekly, monthly)
+- Special events (Easter, Christmas, conferences)
+- Service details (time, location, theme, speaker)
+- Attach teams to services
+- Service order/bulletin builder
+- Live service notes and announcements
+
+### 3.2 Attendance Tracking
+
+- Digital check-in for services
+- QR code or manual check-in
+- Track attendance by service and member
+- Generate attendance reports
+- Integration with kids ministry check-in
+- Visitor identification
+
+### 3.3 Calendar & Events
+
+- Church-wide calendar
+- Team-specific events
+- Event RSVP system
+- Event reminders
+- Recurring event support
+- Public vs. private events
+
+## Phase 4: Communication & Community
+
+### 4.1 Chat System (Discord-like)
+
+- **Channel Structure**
+  - #general - All church members
+  - #announcements - Read-only for leaders, view for all
+  - Team-specific channels (e.g., #worship-team, #prayer-team)
+  - Private group channels
+  - Direct messages between members
+- **Features**
+  - Real-time messaging
+  - Message reactions and threading
+  - File sharing (images, documents, audio)
+  - Voice messages
+  - Mention system (@user, @team, @everyone)
+  - Read receipts (optional)
+  - Message search and filters
+- **Moderation**
+  - Leaders can moderate channels
+  - Pin important messages
+  - Delete inappropriate content
+  - Mute/ban system for violations
+
+### 4.2 Announcements & Notifications
+
+- Push notifications for important updates
+- In-app notification center
+- Email digest options
+- SMS notifications for urgent matters
+- Notification preferences per user
+- Schedule announcements in advance
+
+### 4.3 Member Directory & Profiles
+
+- Searchable member directory
+- Member profiles with contact info
+- Privacy settings (control who sees what)
+- Connection features (add friends, follow)
+- Member map (optional location sharing)
+
+## Phase 5: Financial Management
+
+### 5.1 Donations & Giving
+
+- **Donation Portal**
+  - One-time giving
+  - Recurring donations (weekly, monthly)
+  - Multiple payment methods (credit card, bank transfer, mobile wallet)
+  - Designated giving (tithes, offerings, building fund, missions)
+  - Anonymous giving option
+- **Giving Statements**
+  - Annual giving statements for tax purposes
+  - Downloadable receipts
+  - Giving history for members
+
+### 5.2 Financial Dashboard (Pastor/Admin Only)
+
+- Income tracking by category
+- Expense logging
+- Budget management
+- Financial reports (weekly, monthly, quarterly, annual)
+- Export to Excel/CSV
+- Visual charts and graphs
+- Donor analytics (top donors, giving trends)
+
+### 5.3 Financial Transparency (Optional)
+
+- Public financial reports for members
+- Budget breakdown visibility
+- Project funding progress (e.g., building fund thermometer)
+
+## Phase 6: Public API & Integration
+
+### 6.1 Public API
+
+- **Church Website Integration**
+  - Fetch upcoming events and display on external website
+  - Service times and location
+  - Recent sermons and messages
+  - Team member bios
+- **Event Management**
+  - Create events in app, auto-sync to website
+  - RSVP tracking from website to app
+- **Sermon Library**
+  - Expose sermon audio/video via API
+  - Automatically update website sermon page
+- **API Documentation**
+  - Developer-friendly REST API
+  - Webhooks for real-time updates
+  - Rate limiting and authentication
+  - Church-specific API keys
+
+### 6.2 Third-Party Integrations
+
+- Calendar integration (Google Calendar, Apple Calendar)
+- Email service providers (Mailchimp, SendGrid)
+- Accounting software (QuickBooks, Xero)
+- Streaming platforms (YouTube, Facebook Live)
+- Social media auto-posting
+
+## Phase 7: Advanced Features (Future)
+
+### 7.1 Small Groups
+
+- Small group management
+- Group meeting scheduling
+- Group chat and resources
+- Curriculum and study materials
+- Group leader tools
+
+### 7.2 Sermon Library
+
+- Upload and organize sermons
+- Audio and video support
+- Sermon notes and discussion questions
+- Search by topic, speaker, date, scripture
+- Download for offline listening
+
+### 7.3 Bible Integration
+
+- Built-in Bible reader
+- Link scriptures in messages and posts
+- Study tools and commentaries
+- Reading plans
+
+### 7.4 Devotionals & Content
+
+- Daily devotionals
+- Leadership articles
+- Video content
+- Push notification for daily devotional
+
+### 7.5 Volunteer Management
+
+- Volunteer opportunity board
+- Sign-up system
+- Hour tracking
+- Background check integration
+- Volunteer appreciation tools
+
+### 7.6 Facility Management
+
+- Room booking system
+- Equipment checkout
+- Maintenance requests
+- Asset tracking
+
+### 7.7 Advanced Analytics
+
+- Member engagement scoring
+- Predictive analytics for attendance
+- Churn risk identification
+- Growth trends and forecasting
+
+## Technical Architecture Considerations
+
+### Multi-Tenancy
+
+- Each church has isolated data (database per tenant or schema separation)
+- Subdomain or church ID routing
+- Shared infrastructure with tenant-specific customization
+- Scalable architecture to handle growth
+
+### Real-Time Features
+
+- WebSocket connections for chat
+- Push notifications for prayer requests, assignments
+- Live updates for service changes
+- Real-time attendance tracking
+
+### Offline Support
+
+- Core features work offline
+- Sync when connection restored
+- Offline message queuing
+- Cached data for key features
+
+### Security & Privacy
+
+- End-to-end encryption for sensitive data
+- GDPR and data privacy compliance
+- Audit logs for sensitive actions
+- Two-factor authentication option
+- Data export for members (GDPR right to data portability)
+
+### Scalability
+
+- Designed to handle 100+ churches
+- Support churches from 50 to 5000+ members
+- Efficient data queries with proper indexing
+- CDN for media assets
+- Background job processing for heavy tasks
+
+## Success Metrics
+
+- Number of registered churches
+- Active users per church
+- Feature adoption rates
+- User engagement (daily/weekly active users)
+- Team coordination efficiency
+- Prayer request response time
+- Giving growth
+- User satisfaction and retention
+
+## Expansion Possibilities
+
+- Web dashboard for desktop administration
+- Tablet-optimized views for check-in kiosks
+- White-label options for larger churches
+- Denomination-specific features
+- Multi-language support
+- Global expansion to different regions
+- Church planting network features
+- Conference and event management for denominations
+
+## Development Priorities
+
+1. **Phase 1**: Foundation - Authentication, church registration, basic dashboard, member management
+2. **Phase 2**: Teams - Worship and prayer team features as MVPs
+3. **Phase 3**: Services - Scheduling and attendance
+4. **Phase 4**: Communication - Chat and announcements
+5. **Phase 5**: Financial - Donations and tracking
+6. **Phase 6**: API - Public integration
+7. **Phase 7**: Advanced features based on user feedback and demand
+
+## Design Philosophy
+
+- **Mobile-First**: Optimized for mobile with occasional desktop use
+- **Intuitive**: Easy for non-technical church staff
+- **Beautiful**: Modern, clean design that honors the purpose
+- **Fast**: Performant with quick load times
+- **Reliable**: Stable and trustworthy for mission-critical church operations
+- **Accessible**: Usable by all ages and technical abilities
+- **Prayerful**: Built with the church's mission in mind
