@@ -16,6 +16,8 @@ export const queryKeys = {
     all: ["teams"] as const,
     detail: (id: string) => ["teams", id] as const,
     byChurch: (churchId: string) => ["teams", "church", churchId] as const,
+    members: (teamId: string) => ["teams", "members", teamId] as const,
+    myMembership: (teamId: string, userId: string) => ["teams", "membership", teamId, userId] as const,
   },
   membershipRequests: {
     all: ["membershipRequests"] as const,

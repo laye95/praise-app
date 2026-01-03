@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from "react";
-import { Modal, TouchableOpacity, Animated, FlatList } from "react-native";
+import { Modal, TouchableOpacity, Animated, FlatList, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
+import { Button, ButtonText } from "@/components/ui/button";
 import { Ionicons } from "@expo/vector-icons";
 import { ChurchRole } from "@/services/api/permissionService";
 import { User } from "@/types/user";
 import { useTheme } from "@/hooks/useTheme";
+import { useTranslation } from "@/hooks/useTranslation";
 import * as Haptics from "expo-haptics";
 
 interface RoleSelectionModalProps {
@@ -17,7 +19,7 @@ interface RoleSelectionModalProps {
   roles: ChurchRole[];
   currentRoleIds: string[];
   onClose: () => void;
-  onSelectRole: (roleId: string) => void;
+  onSaveRoles: (roleIds: string[]) => void;
   isUpdating: boolean;
 }
 
@@ -27,16 +29,19 @@ export function RoleSelectionModal({
   roles,
   currentRoleIds,
   onClose,
-  onSelectRole,
+  onSaveRoles,
   isUpdating,
 }: RoleSelectionModalProps) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const isDark = theme.pageBg === "#0f172a";
   const slideAnim = useRef(new Animated.Value(500)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (visible) {
+      setSelectedRoleIds([...currentRoleIds]);
       slideAnim.setValue(500);
       fadeAnim.setValue(0);
 
@@ -56,8 +61,15 @@ export function RoleSelectionModal({
     } else {
       slideAnim.setValue(500);
       fadeAnim.setValue(0);
+      setSelectedRoleIds([]);
     }
   }, [visible, slideAnim, fadeAnim]);
+
+  useEffect(() => {
+    if (visible) {
+      setSelectedRoleIds([...currentRoleIds]);
+    }
+  }, [visible, currentRoleIds]);
 
   const handleClose = () => {
     Animated.parallel([
@@ -76,10 +88,24 @@ export function RoleSelectionModal({
     });
   };
 
-  const handleSelectRole = (roleId: string) => {
+  const handleToggleRole = (roleId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onSelectRole(roleId);
+    setSelectedRoleIds((prev) => {
+      if (prev.includes(roleId)) {
+        return prev.filter((id) => id !== roleId);
+      } else {
+        return [...prev, roleId];
+      }
+    });
   };
+
+  const handleSave = () => {
+    if (!hasChanges || isUpdating) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onSaveRoles(selectedRoleIds);
+  };
+
+  const hasChanges = JSON.stringify([...selectedRoleIds].sort()) !== JSON.stringify([...currentRoleIds].sort());
 
   if (!visible) {
     return null;
@@ -140,7 +166,7 @@ export function RoleSelectionModal({
                     className="text-lg font-bold mb-3"
                     style={{ color: theme.textPrimary }}
                   >
-                    Select Role
+                    {t("members.roles.selectRoles")}
                   </Text>
                 </Box>
                 
@@ -215,7 +241,7 @@ export function RoleSelectionModal({
                     className="text-sm"
                     style={{ color: theme.textSecondary }}
                   >
-                    Choose a role to assign
+                    {t("members.roles.chooseRoles")}
                   </Text>
                 </Box>
               </VStack>
@@ -224,11 +250,11 @@ export function RoleSelectionModal({
                 data={roles}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => {
-                  const isSelected = currentRoleIds.includes(item.id);
+                  const isSelected = selectedRoleIds.includes(item.id);
                   return (
                     <TouchableOpacity
                       activeOpacity={0.7}
-                      onPress={() => handleSelectRole(item.id)}
+                      onPress={() => handleToggleRole(item.id)}
                       disabled={isUpdating}
                       className="cursor-pointer"
                       style={{
@@ -332,30 +358,59 @@ export function RoleSelectionModal({
                       className="text-sm"
                       style={{ color: theme.textSecondary }}
                     >
-                      No roles available
+                      {t("members.roles.noRolesAvailable")}
                     </Text>
                   </Box>
                 }
                 contentContainerStyle={{ paddingBottom: 16 }}
               />
 
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={handleClose}
-                className="cursor-pointer mx-6 mt-2"
-                style={{
-                  paddingVertical: 16,
-                  borderRadius: 12,
-                  backgroundColor: isDark ? "#1e293b" : "#f3f4f6",
-                }}
-              >
-                <Text
-                  className="text-base font-semibold text-center"
-                  style={{ color: theme.textPrimary }}
+              <VStack className="px-6 mt-4 gap-2">
+                <Button
+                  onPress={handleSave}
+                  action="primary"
+                  variant="solid"
+                  size="lg"
+                  className="h-12 cursor-pointer rounded-xl"
+                  isDisabled={isUpdating || !hasChanges}
+                  style={{
+                    backgroundColor: theme.buttonPrimary,
+                    opacity: !hasChanges ? 0.5 : 1,
+                  }}
                 >
-                  Cancel
-                </Text>
-              </TouchableOpacity>
+                  {isUpdating ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <ButtonText
+                      className="text-base font-semibold"
+                      style={{ color: "#ffffff" }}
+                    >
+                      {t("members.roles.saveRoles")}
+                    </ButtonText>
+                  )}
+                </Button>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={handleClose}
+                  className="cursor-pointer"
+                  style={{
+                    paddingVertical: 16,
+                    borderRadius: 12,
+                    backgroundColor: isDark ? "#1e293b" : "#f3f4f6",
+                  }}
+                  disabled={isUpdating}
+                >
+                  <Text
+                    className="text-base font-semibold text-center"
+                    style={{ 
+                      color: theme.textPrimary,
+                      opacity: isUpdating ? 0.5 : 1,
+                    }}
+                  >
+                    {t("common.cancel")}
+                  </Text>
+                </TouchableOpacity>
+              </VStack>
             </Box>
           </SafeAreaView>
         </Animated.View>

@@ -202,6 +202,48 @@ export function useMembers() {
     },
   });
 
+  const updateRolesMutation = useMutation({
+    mutationFn: async ({ userId, roleIds }: { userId: string; roleIds: string[] }) => {
+      const currentRoles = userRolesQuery.data?.[userId] || [];
+      
+      const rolesToAdd = roleIds.filter((id) => !currentRoles.includes(id));
+      const rolesToRemove = currentRoles.filter((id) => !roleIds.includes(id));
+
+      await Promise.all([
+        ...rolesToAdd.map((roleId) => permissionService.assignRoleToUser(userId, roleId)),
+        ...rolesToRemove.map((roleId) => permissionService.removeRoleFromUser(userId, roleId)),
+      ]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.permissions.userRoles(profile?.church_id || ""),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.users.byChurch(profile?.church_id || ""),
+      });
+      toast.show({
+        title: "Roles Updated",
+        description: "The member's roles have been updated",
+        action: "success",
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    onError: (err: unknown) => {
+      let errorMessage = "Failed to update roles";
+      if (err instanceof AppError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      toast.show({
+        title: "Error",
+        description: errorMessage,
+        action: "error",
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    },
+  });
+
   return {
     members: membersQuery.data || [],
     invitations: invitationsQuery.data || [],
@@ -214,9 +256,11 @@ export function useMembers() {
     declineInvitation: declineMutation.mutate,
     removeMember: removeMemberMutation.mutate,
     assignRole: assignRoleMutation.mutate,
+    updateRoles: updateRolesMutation.mutate,
+    updateRolesMutation,
     isAccepting: acceptMutation.isPending,
     isDeclining: declineMutation.isPending,
     isRemoving: removeMemberMutation.isPending,
-    isUpdatingRole: assignRoleMutation.isPending,
+    isUpdatingRole: updateRolesMutation.isPending,
   };
 }

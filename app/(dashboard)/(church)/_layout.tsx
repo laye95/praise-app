@@ -44,7 +44,7 @@ export default function ChurchLayout() {
         }}
       />
       <Tabs.Screen
-        name="teams/index"
+        name="teams"
         options={{
           title: "Teams",
         }}

@@ -45,6 +45,11 @@ export default function GeneralProfileScreen() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.users.detail(userId || ""),
       });
+      if (profile?.church_id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.users.byChurch(profile.church_id),
+        });
+      }
       toast.show({
         title: "Profile Updated",
         description: "Your profile information has been updated successfully",

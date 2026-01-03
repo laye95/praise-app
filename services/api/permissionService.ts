@@ -213,6 +213,182 @@ export class PermissionService extends BaseService {
       throw this.normalizeError(error);
     }
   }
+
+  async createRole(
+    churchId: string,
+    name: string,
+    description: string | undefined,
+    permissionKeys: string[],
+  ): Promise<ChurchRole> {
+    try {
+      this.log("info", "Creating church role", { churchId, name, permissionKeys });
+
+      const { data: roleData, error: roleError } = await this.supabase
+        .from("church_roles")
+        .insert({
+          church_id: churchId,
+          name: name.trim(),
+          description: description?.trim() || null,
+          is_system_role: false,
+        })
+        .select()
+        .single();
+
+      if (roleError) throw roleError;
+
+      if (permissionKeys.length > 0) {
+        const { data: permissions, error: permError } = await this.supabase
+          .from("permissions")
+          .select("id")
+          .in("key", permissionKeys);
+
+        if (permError) throw permError;
+
+        if (permissions && permissions.length > 0) {
+          const permissionIds = permissions.map((p) => p.id);
+          const { error: rolePermError } = await this.supabase
+            .from("church_role_permissions")
+            .insert(
+              permissionIds.map((permissionId) => ({
+                church_role_id: roleData.id,
+                permission_id: permissionId,
+              })),
+            );
+
+          if (rolePermError) throw rolePermError;
+        }
+      }
+
+      this.log("info", "Successfully created role", { roleId: roleData.id });
+      return roleData as ChurchRole;
+    } catch (error) {
+      this.log("error", "Failed to create role", error);
+      throw this.normalizeError(error);
+    }
+  }
+
+  async getRolePermissions(roleId: string): Promise<string[]> {
+    try {
+      this.log("info", "Fetching role permissions", { roleId });
+
+      const { data, error } = await this.supabase
+        .from("church_role_permissions")
+        .select("permission_id, permissions!inner(key)")
+        .eq("church_role_id", roleId);
+
+      if (error) throw error;
+
+      return (data || [])
+        .map((item: any) => item.permissions?.key)
+        .filter((key: string | undefined): key is string => !!key);
+    } catch (error) {
+      this.log("error", "Failed to fetch role permissions", error);
+      throw this.normalizeError(error);
+    }
+  }
+
+  async updateRole(
+    roleId: string,
+    name: string,
+    description: string | undefined,
+    permissionKeys: string[],
+  ): Promise<ChurchRole> {
+    try {
+      this.log("info", "Updating church role", { roleId, name, permissionKeys });
+
+      const { data: roleData, error: roleError } = await this.supabase
+        .from("church_roles")
+        .update({
+          name: name.trim(),
+          description: description?.trim() || null,
+        })
+        .eq("id", roleId)
+        .select()
+        .single();
+
+      if (roleError) throw roleError;
+
+      const { error: deletePermError } = await this.supabase
+        .from("church_role_permissions")
+        .delete()
+        .eq("church_role_id", roleId);
+
+      if (deletePermError) throw deletePermError;
+
+      if (permissionKeys.length > 0) {
+        const { data: permissions, error: permError } = await this.supabase
+          .from("permissions")
+          .select("id")
+          .in("key", permissionKeys);
+
+        if (permError) throw permError;
+
+        if (permissions && permissions.length > 0) {
+          const permissionIds = permissions.map((p) => p.id);
+          const { error: rolePermError } = await this.supabase
+            .from("church_role_permissions")
+            .insert(
+              permissionIds.map((permissionId) => ({
+                church_role_id: roleId,
+                permission_id: permissionId,
+              })),
+            );
+
+          if (rolePermError) throw rolePermError;
+        }
+      }
+
+      this.log("info", "Successfully updated role", { roleId });
+      return roleData as ChurchRole;
+    } catch (error) {
+      this.log("error", "Failed to update role", error);
+      throw this.normalizeError(error);
+    }
+  }
+
+  async deleteRole(roleId: string): Promise<void> {
+    try {
+      this.log("info", "Deleting church role", { roleId });
+
+      const { data: role, error: fetchError } = await this.supabase
+        .from("church_roles")
+        .select("is_system_role")
+        .eq("id", roleId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (role?.is_system_role) {
+        throw new Error("Cannot delete system roles");
+      }
+
+      const { error: permError } = await this.supabase
+        .from("church_role_permissions")
+        .delete()
+        .eq("church_role_id", roleId);
+
+      if (permError) throw permError;
+
+      const { error: userRoleError } = await this.supabase
+        .from("user_church_roles")
+        .delete()
+        .eq("church_role_id", roleId);
+
+      if (userRoleError) throw userRoleError;
+
+      const { error: roleError } = await this.supabase
+        .from("church_roles")
+        .delete()
+        .eq("id", roleId);
+
+      if (roleError) throw roleError;
+
+      this.log("info", "Successfully deleted role", { roleId });
+    } catch (error) {
+      this.log("error", "Failed to delete role", error);
+      throw this.normalizeError(error);
+    }
+  }
 }
 
 export const permissionService = new PermissionService();

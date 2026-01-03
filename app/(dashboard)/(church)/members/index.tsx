@@ -49,10 +49,12 @@ export default function MembersScreen() {
     declineInvitation,
     removeMember,
     assignRole,
+    updateRoles,
     isAccepting,
     isDeclining,
     isRemoving,
     isUpdatingRole,
+    updateRolesMutation,
   } = useMembers();
 
   const [selectedMember, setSelectedMember] = useState<User | null>(null);
@@ -68,6 +70,21 @@ export default function MembersScreen() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (updateRolesMutation?.isSuccess && showRoleModal) {
+      setShowRoleModal(false);
+      setSelectedMember(null);
+      updateRolesMutation.reset();
+    }
+  }, [updateRolesMutation?.isSuccess, showRoleModal]);
+
+  useEffect(() => {
+    if (updateRolesMutation.isSuccess && showRoleModal) {
+      setShowRoleModal(false);
+      setSelectedMember(null);
+    }
+  }, [updateRolesMutation.isSuccess, showRoleModal]);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
   const canViewInvitations = can("membership_requests:read");
@@ -660,8 +677,12 @@ export default function MembersScreen() {
             onChangeRole={(memberId) => {
               const member = members.find((m) => m.id === memberId);
               if (member) {
+                setShowActionPopover(false);
+                setAnchorPosition(null);
                 setSelectedMember(member);
-                setShowRoleModal(true);
+                setTimeout(() => {
+                  setShowRoleModal(true);
+                }, 100);
               }
             }}
             isRemoving={isRemoving}
@@ -678,11 +699,9 @@ export default function MembersScreen() {
               setShowRoleModal(false);
               setSelectedMember(null);
             }}
-            onSelectRole={(roleId) => {
+            onSaveRoles={(roleIds) => {
               if (selectedMember) {
-                assignRole({ userId: selectedMember.id, roleId });
-                setShowRoleModal(false);
-                setSelectedMember(null);
+                updateRoles({ userId: selectedMember.id, roleIds });
               }
             }}
             isUpdating={isUpdatingRole}
@@ -725,6 +744,8 @@ export default function MembersScreen() {
                 if (member) {
                   setSelectedMember(member);
                   setShowRoleModal(true);
+                  setShowMemberDetail(false);
+                  setViewingMember(null);
                 }
               }
             : undefined

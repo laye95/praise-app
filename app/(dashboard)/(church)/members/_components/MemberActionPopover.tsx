@@ -94,7 +94,6 @@ export function MemberActionPopover({
   const handleChangeRole = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onChangeRole(member.id);
-    onClose();
   };
 
   const popoverX = Math.max(

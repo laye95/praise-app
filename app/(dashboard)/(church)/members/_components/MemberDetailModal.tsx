@@ -76,7 +76,14 @@ export function MemberDetailModal({
     }
   }, [visible, slideAnim, fadeAnim]);
 
-  const handleClose = () => {
+  const handleClose = (skipAnimation = false) => {
+    if (skipAnimation) {
+      slideAnim.setValue(500);
+      fadeAnim.setValue(0);
+      onClose();
+      return;
+    }
+    
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -462,8 +469,10 @@ export function MemberDetailModal({
                     onPress={() => {
                       if (onChangeRole && member) {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        onChangeRole(member.id);
-                        handleClose();
+                        handleClose(true);
+                        setTimeout(() => {
+                          onChangeRole(member.id);
+                        }, 100);
                       }
                     }}
                     className="cursor-pointer"

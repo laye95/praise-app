@@ -676,6 +676,14 @@ BEGIN
     RAISE EXCEPTION 'You do not have permission to remove members from this church';
   END IF;
 
+  -- Remove all team memberships for this user
+  DELETE FROM public.team_members
+  WHERE user_id = target_user_id
+    AND team_id IN (
+      SELECT id FROM public.teams
+      WHERE church_id = target_user_record.church_id
+    );
+
   -- Remove all role assignments for this church
   DELETE FROM public.user_church_roles
   WHERE user_id = target_user_id
@@ -694,6 +702,178 @@ $$;
 
 -- Grant execute permission to authenticated users
 GRANT EXECUTE ON FUNCTION public.remove_member_from_church(UUID) TO authenticated;
+
+-- ============================================================================
+-- Teams Tables (Team Management)
+-- ============================================================================
+
+-- Create teams table
+CREATE TABLE public.teams (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  church_id UUID NOT NULL REFERENCES public.churches(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  type TEXT NOT NULL CHECK (type IN ('worship', 'prayer', 'hospitality', 'media', 'kids', 'youth', 'outreach', 'other')),
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  UNIQUE(church_id, name)
+);
+
+-- Create index on church_id for faster queries
+CREATE INDEX idx_teams_church_id ON public.teams(church_id);
+
+-- Create index on type for filtering
+CREATE INDEX idx_teams_type ON public.teams(type);
+
+-- Enable Row Level Security for teams
+ALTER TABLE public.teams ENABLE ROW LEVEL SECURITY;
+
+-- Create trigger for teams updated_at
+CREATE TRIGGER set_updated_at_teams
+  BEFORE UPDATE ON public.teams
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_updated_at();
+
+-- RLS Policies for teams
+
+-- Users with teams:read can view teams for their church
+CREATE POLICY "Users can view teams for their church"
+  ON public.teams FOR SELECT
+  TO authenticated
+  USING (public.has_permission(church_id, 'teams:read'));
+
+-- Users with teams:create can create teams
+CREATE POLICY "Authorized users can create teams"
+  ON public.teams FOR INSERT
+  TO authenticated
+  WITH CHECK (public.has_permission(church_id, 'teams:create'));
+
+-- Users with teams:update can update teams
+CREATE POLICY "Authorized users can update teams"
+  ON public.teams FOR UPDATE
+  TO authenticated
+  USING (public.has_permission(church_id, 'teams:update'))
+  WITH CHECK (public.has_permission(church_id, 'teams:update'));
+
+-- Users with teams:delete can delete teams
+CREATE POLICY "Authorized users can delete teams"
+  ON public.teams FOR DELETE
+  TO authenticated
+  USING (public.has_permission(church_id, 'teams:delete'));
+
+-- Create team_members table
+CREATE TABLE public.team_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('leader', 'member')),
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  UNIQUE(team_id, user_id)
+);
+
+-- Create indexes for faster queries
+CREATE INDEX idx_team_members_team_id ON public.team_members(team_id);
+CREATE INDEX idx_team_members_user_id ON public.team_members(user_id);
+CREATE INDEX idx_team_members_role ON public.team_members(role);
+
+-- Enable Row Level Security for team_members
+ALTER TABLE public.team_members ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for team_members
+
+-- Users with teams:read can view team members for teams in their church
+CREATE POLICY "Users can view team members for their church teams"
+  ON public.team_members FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_members.team_id
+      AND public.has_permission(t.church_id, 'teams:read')
+    )
+  );
+
+-- Function to check if current user is a team leader
+CREATE OR REPLACE FUNCTION public.is_team_leader(check_team_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  is_leader BOOLEAN;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.team_members tm
+    WHERE tm.team_id = check_team_id
+    AND tm.user_id = auth.uid()
+    AND tm.role = 'leader'
+  ) INTO is_leader;
+  
+  RETURN COALESCE(is_leader, false);
+END;
+$$;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.is_team_leader(UUID) TO authenticated;
+
+-- Users with teams:update can add team members with any role
+-- Team leaders can add members (but only with role='member', no privilege escalation)
+CREATE POLICY "Authorized users and team leaders can add team members"
+  ON public.team_members FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    (
+      EXISTS (
+        SELECT 1 FROM public.teams t
+        WHERE t.id = team_members.team_id
+        AND public.has_permission(t.church_id, 'teams:update')
+      )
+    )
+    OR (
+      public.is_team_leader(team_members.team_id)
+      AND team_members.role = 'member'
+    )
+  );
+
+-- Users with teams:update can remove any team members
+-- Team leaders can remove members (but only members, not other leaders)
+CREATE POLICY "Authorized users and team leaders can remove team members"
+  ON public.team_members FOR DELETE
+  TO authenticated
+  USING (
+    (
+      EXISTS (
+        SELECT 1 FROM public.teams t
+        WHERE t.id = team_members.team_id
+        AND public.has_permission(t.church_id, 'teams:update')
+      )
+    )
+    OR (
+      public.is_team_leader(team_members.team_id)
+      AND team_members.role = 'member'
+    )
+  );
+
+-- Users with teams:update can update team member roles
+CREATE POLICY "Authorized users can update team member roles"
+  ON public.team_members FOR UPDATE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_members.team_id
+      AND public.has_permission(t.church_id, 'teams:update')
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_members.team_id
+      AND public.has_permission(t.church_id, 'teams:update')
+    )
+  );
 
 -- ============================================================================
 -- User Settings Table (Future-proof settings storage)

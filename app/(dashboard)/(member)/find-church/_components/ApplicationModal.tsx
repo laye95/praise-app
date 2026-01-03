@@ -259,7 +259,7 @@ export function ApplicationModal({
                         className="text-base font-semibold"
                         style={{ color: theme.buttonDecline }}
                       >
-                        {t("findChurch.cancel")}
+                        {t("common.cancel")}
                       </ButtonText>
                     </Button>
                     <Button
