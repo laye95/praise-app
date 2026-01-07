@@ -100,7 +100,7 @@ export class TeamMemberService extends BaseService {
 
       const { data, error } = await this.supabase
         .from(this.tableName!)
-        .update({ role })
+        .update({ role, updated_at: new Date().toISOString() })
         .eq("team_id", teamId)
         .eq("user_id", userId)
         .select()
@@ -115,11 +115,43 @@ export class TeamMemberService extends BaseService {
     }
   }
 
-  async checkIsTeamLeader(teamId: string): Promise<boolean> {
+  async updatePosition(
+    teamId: string,
+    userId: string,
+    position?: string,
+  ): Promise<TeamMember> {
+    try {
+      this.log("info", "Updating team member position", {
+        teamId,
+        userId,
+        position,
+      });
+
+      const { data, error } = await this.supabase
+        .from(this.tableName!)
+        .update({
+          position: position || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("team_id", teamId)
+        .eq("user_id", userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return data as TeamMember;
+    } catch (error) {
+      this.log("error", "Failed to update position", error);
+      throw this.normalizeError(error);
+    }
+  }
+
+  async checkIsTeamAdmin(teamId: string): Promise<boolean> {
     try {
       const userId = await this.getCurrentUserId();
 
-      const { data, error } = await this.supabase.rpc("is_team_leader", {
+      const { data, error } = await this.supabase.rpc("is_team_admin", {
         check_team_id: teamId,
       });
 
@@ -127,8 +159,34 @@ export class TeamMemberService extends BaseService {
 
       return data === true;
     } catch (error) {
-      this.log("error", "Failed to check team leader status", error);
+      this.log("error", "Failed to check team admin status", error);
       return false;
+    }
+  }
+
+  async canUserBeAddedToGroup(
+    teamId: string,
+    userId: string,
+  ): Promise<{ canAdd: boolean; existingGroupId?: string }> {
+    try {
+      const { data, error } = await this.supabase.rpc(
+        "get_user_group_for_team",
+        {
+          check_team_id: teamId,
+          check_user_id: userId,
+        },
+      );
+
+      if (error) throw error;
+
+      if (data) {
+        return { canAdd: false, existingGroupId: data };
+      }
+
+      return { canAdd: true };
+    } catch (error) {
+      this.log("error", "Failed to check if user can be added to group", error);
+      return { canAdd: false };
     }
   }
 
@@ -156,6 +214,24 @@ export class TeamMemberService extends BaseService {
     } catch (error) {
       this.log("error", "Failed to fetch team membership", error);
       return null;
+    }
+  }
+
+  async getMyTeams(): Promise<string[]> {
+    try {
+      const userId = await this.getCurrentUserId();
+
+      const { data, error } = await this.supabase
+        .from(this.tableName!)
+        .select("team_id")
+        .eq("user_id", userId);
+
+      if (error) throw error;
+
+      return (data || []).map((item) => item.team_id);
+    } catch (error) {
+      this.log("error", "Failed to fetch user teams", error);
+      return [];
     }
   }
 }

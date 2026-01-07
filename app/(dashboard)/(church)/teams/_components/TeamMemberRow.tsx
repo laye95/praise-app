@@ -8,13 +8,17 @@ import { TeamMemberWithUser, TeamMemberRole } from "@/types/team";
 import { User } from "@/types/user";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface TeamMemberRowProps {
   member: TeamMemberWithUser;
   currentUserId?: string;
   canManage?: boolean;
+  canEditPosition?: boolean;
   onRemove?: (userId: string) => void;
   onUpdateRole?: (userId: string, role: TeamMemberRole) => void;
+  onUpdatePosition?: (userId: string, position?: string) => void;
+  onPress?: () => void;
   isRemoving?: boolean;
 }
 
@@ -22,13 +26,17 @@ export function TeamMemberRow({
   member,
   currentUserId,
   canManage = false,
+  canEditPosition = false,
   onRemove,
   onUpdateRole,
+  onUpdatePosition,
+  onPress,
   isRemoving = false,
 }: TeamMemberRowProps) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const isDark = theme.pageBg === "#0f172a";
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const isCurrentUser = currentUserId === member.user_id;
   const canRemove = canManage && !isCurrentUser;
 
@@ -51,19 +59,24 @@ export function TeamMemberRow({
     member.user.full_name || member.user.email.split("@")[0];
 
   return (
-    <Box
-      className="rounded-xl p-4 mb-3"
-      style={{
-        backgroundColor: theme.cardBg,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: isDark ? 0.3 : 0.06,
-        shadowRadius: 8,
-        elevation: 3,
-        borderWidth: 1,
-        borderColor: theme.cardBorder,
-      }}
+    <TouchableOpacity
+      activeOpacity={canEditPosition ? 0.7 : 1}
+      onPress={canEditPosition ? onPress : undefined}
+      disabled={!canEditPosition}
     >
+      <Box
+        className="rounded-xl p-4 mb-3"
+        style={{
+          backgroundColor: theme.cardBg,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: isDark ? 0.3 : 0.06,
+          shadowRadius: 8,
+          elevation: 3,
+          borderWidth: 1,
+          borderColor: theme.cardBorder,
+        }}
+      >
       <HStack className="items-center justify-between">
         <HStack className="items-center gap-3 flex-1">
           <Box
@@ -78,7 +91,7 @@ export function TeamMemberRow({
           >
             <Text
               className="text-base font-semibold"
-              style={{ color: theme.buttonPrimary }}
+              style={{ color: isDark ? "#ffffff" : theme.buttonPrimary }}
             >
               {initials}
             </Text>
@@ -108,6 +121,21 @@ export function TeamMemberRow({
                 {member.user.email}
               </Text>
             )}
+            {member.position && (
+              <HStack className="items-center gap-1 mt-0.5">
+                <Ionicons
+                  name="musical-notes"
+                  size={12}
+                  color={theme.textSecondary}
+                />
+                <Text
+                  className="text-xs"
+                  style={{ color: theme.textSecondary }}
+                >
+                  {member.position}
+                </Text>
+              </HStack>
+            )}
           </VStack>
         </HStack>
         <HStack className="items-center gap-3">
@@ -115,17 +143,26 @@ export function TeamMemberRow({
             className="rounded px-2 py-1"
             style={{
               backgroundColor:
-                member.role === "leader"
+                member.role === "admin"
                   ? theme.badgeWarning
                   : theme.badgeInfo,
             }}
           >
             <Text
               className="text-xs font-semibold"
-              style={{ color: "#ffffff" }}
+              style={{
+                color:
+                  member.role === "admin"
+                    ? isDark
+                      ? "#ffffff"
+                      : "#92400e"
+                    : isDark
+                    ? "#ffffff"
+                    : "#2563eb",
+              }}
             >
-              {member.role === "leader"
-                ? t("teams.leader")
+              {member.role === "admin"
+                ? t("teams.admin")
                 : t("teams.member")}
             </Text>
           </Box>
@@ -146,5 +183,6 @@ export function TeamMemberRow({
         </HStack>
       </HStack>
     </Box>
+    </TouchableOpacity>
   );
 }

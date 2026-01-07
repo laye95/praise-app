@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Modal, TouchableOpacity, Animated } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -28,6 +28,7 @@ export function RoleActionSheet({
 }: RoleActionSheetProps) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const isDark = theme.pageBg === "#0f172a";
   const slideAnim = useRef(new Animated.Value(300)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -110,17 +111,15 @@ export function RoleActionSheet({
             transform: [{ translateY: slideAnim }],
           }}
         >
-          <SafeAreaView edges={["bottom"]}>
-            <Box
-              className="rounded-t-3xl"
-              style={{
-                backgroundColor: theme.cardBg,
-                borderTopWidth: 1,
-                borderTopColor: theme.cardBorder,
-                paddingTop: 8,
-                paddingBottom: 32,
-              }}
-            >
+          <Box
+            className="rounded-t-3xl"
+            style={{
+              backgroundColor: theme.cardBg,
+              borderTopWidth: 1,
+              borderTopColor: theme.cardBorder,
+              paddingTop: 8,
+            }}
+          >
               <VStack className="mb-4">
                 <Box className="mb-3 items-center">
                   <Box
@@ -141,7 +140,10 @@ export function RoleActionSheet({
                 </Box>
               </VStack>
 
-              <VStack className="px-6 gap-3">
+              <VStack
+                className="px-6 gap-3"
+                style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+              >
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={handleDelete}
@@ -190,7 +192,6 @@ export function RoleActionSheet({
                 </TouchableOpacity>
               </VStack>
             </Box>
-          </SafeAreaView>
         </Animated.View>
       </Animated.View>
     </Modal>

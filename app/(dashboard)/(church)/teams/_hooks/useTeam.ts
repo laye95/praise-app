@@ -32,9 +32,9 @@ export function useTeam(teamId: string) {
     staleTime: 1000 * 60 * 2,
   });
 
-  const isLeaderQuery = useQuery({
-    queryKey: ["teams", "isLeader", teamId, userId || ""],
-    queryFn: () => teamMemberService.checkIsTeamLeader(teamId),
+  const isAdminQuery = useQuery({
+    queryKey: ["teams", "isAdmin", teamId, userId || ""],
+    queryFn: () => teamMemberService.checkIsTeamAdmin(teamId),
     enabled: !!teamId && !!userId,
     staleTime: 1000 * 60 * 5,
   });
@@ -142,18 +142,53 @@ export function useTeam(teamId: string) {
     },
   });
 
+  const updatePositionMutation = useMutation({
+    mutationFn: async ({ userId: memberUserId, position }: { userId: string; position?: string }) => {
+      return teamMemberService.updatePosition(teamId, memberUserId, position);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.teams.members(teamId),
+      });
+      toast.show({
+        title: t("teams.toast.positionUpdated"),
+        description: t("teams.toast.positionUpdatedDescription"),
+        action: "success",
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    onError: (err: unknown) => {
+      let errorMessage = t("teams.toast.updatePositionFailed");
+      if (err instanceof AppError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      toast.show({
+        title: t("common.error"),
+        description: errorMessage,
+        action: "error",
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    },
+  });
+
   return {
     team: teamQuery.data,
     members: membersQuery.data || [],
-    isLeader: isLeaderQuery.data || false,
+    isAdmin: isAdminQuery.data || false,
+    isLeader: isAdminQuery.data || false,
     myMembership: myMembershipQuery.data,
     isLoading: teamQuery.isLoading || membersQuery.isLoading,
-    isLoadingLeader: isLeaderQuery.isLoading,
+    isLoadingAdmin: isAdminQuery.isLoading,
+    isLoadingLeader: isAdminQuery.isLoading,
     addMember: addMemberMutation.mutate,
     removeMember: removeMemberMutation.mutate,
     updateMemberRole: updateMemberRoleMutation.mutate,
+    updatePosition: updatePositionMutation.mutate,
     isAddingMember: addMemberMutation.isPending,
     isRemovingMember: removeMemberMutation.isPending,
     isUpdatingRole: updateMemberRoleMutation.isPending,
+    isUpdatingPosition: updatePositionMutation.isPending,
   };
 }

@@ -9,6 +9,7 @@ import { MembershipRequestWithUser } from "@/types/membership";
 import { ActivityIndicator } from "react-native";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface InvitationCardProps {
   invitation: MembershipRequestWithUser;
@@ -27,7 +28,8 @@ export function InvitationCard({
 }: InvitationCardProps) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const isDark = theme.pageBg === "#0f172a";
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   const getStatusBadge = () => {
     const statusConfig: Record<

@@ -4,7 +4,7 @@ export default function TeamsLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="[teamId]" />
+      <Stack.Screen name="[teamId]" options={{ headerShown: false }} />
     </Stack>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Modal, TouchableOpacity, Animated, FlatList, ActivityIndicator } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -11,6 +11,7 @@ import { ChurchRole } from "@/services/api/permissionService";
 import { User } from "@/types/user";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import * as Haptics from "expo-haptics";
 
 interface RoleSelectionModalProps {
@@ -34,7 +35,9 @@ export function RoleSelectionModal({
 }: RoleSelectionModalProps) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const isDark = theme.pageBg === "#0f172a";
+  const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const slideAnim = useRef(new Animated.Value(500)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
@@ -140,17 +143,15 @@ export function RoleSelectionModal({
             maxHeight: "80%",
           }}
         >
-          <SafeAreaView edges={["bottom"]}>
-            <Box
-              className="rounded-t-3xl"
-              style={{
-                backgroundColor: theme.cardBg,
-                borderTopWidth: 1,
-                borderTopColor: theme.cardBorder,
-                paddingTop: 8,
-                paddingBottom: 32,
-              }}
-            >
+          <Box
+            className="rounded-t-3xl"
+            style={{
+              backgroundColor: theme.cardBg,
+              borderTopWidth: 1,
+              borderTopColor: theme.cardBorder,
+              paddingTop: 8,
+            }}
+          >
               <VStack className="mb-4">
                 <Box className="items-center mb-3">
                   <Box
@@ -206,7 +207,7 @@ export function RoleSelectionModal({
                         style={{
                           fontSize: 18,
                           fontWeight: "600",
-                          color: theme.buttonPrimary,
+                          color: isDark ? "#ffffff" : theme.buttonPrimary,
                         }}
                       >
                         {member?.full_name
@@ -365,7 +366,10 @@ export function RoleSelectionModal({
                 contentContainerStyle={{ paddingBottom: 16 }}
               />
 
-              <VStack className="px-6 mt-4 gap-2">
+              <VStack
+                className="px-6 mt-4 gap-2"
+                style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+              >
                 <Button
                   onPress={handleSave}
                   action="primary"
@@ -412,7 +416,6 @@ export function RoleSelectionModal({
                 </TouchableOpacity>
               </VStack>
             </Box>
-          </SafeAreaView>
         </Animated.View>
       </Animated.View>
     </Modal>

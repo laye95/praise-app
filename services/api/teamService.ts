@@ -17,7 +17,7 @@ export class TeamService extends BaseService {
   }
 
   async createTeam(churchId: string, data: CreateTeamData): Promise<Team> {
-    const team = await this.create<Team, Omit<CreateTeamData, "leader_ids" | "member_ids">>({
+    const team = await this.create<Team, Omit<CreateTeamData, "admin_ids" | "member_ids">>({
       church_id: churchId,
       name: data.name.trim(),
       description: data.description?.trim() || undefined,
@@ -26,12 +26,12 @@ export class TeamService extends BaseService {
 
     const memberPromises: Promise<any>[] = [];
 
-    if (data.leader_ids && data.leader_ids.length > 0) {
+    if (data.admin_ids && data.admin_ids.length > 0) {
       memberPromises.push(
-        ...data.leader_ids.map((userId) =>
+        ...data.admin_ids.map((userId) =>
           teamMemberService.addTeamMember(team.id, {
             user_id: userId,
-            role: "leader",
+            role: "admin",
           }),
         ),
       );

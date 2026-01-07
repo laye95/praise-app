@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Team } from "@/types/team";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface TeamCardProps {
   team: Team;
@@ -105,7 +106,7 @@ export function TeamCard({ team, memberCount = 0, onPress }: TeamCardProps) {
               >
                 <Text
                   className="text-xs font-semibold"
-                  style={{ color: "#ffffff" }}
+                  style={{ color: isDark ? "#ffffff" : "#2563eb" }}
                 >
                   {t(`teams.types.${team.type}`)}
                 </Text>

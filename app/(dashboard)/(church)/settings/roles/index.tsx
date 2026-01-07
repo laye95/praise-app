@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { permissionService, ChurchRole } from "@/services/api/permissionService";
 import { queryKeys } from "@/services/queryKeys";
@@ -196,7 +197,7 @@ export default function RolesScreen() {
                                 className="rounded px-1.5 py-0.5"
                                 style={{ backgroundColor: theme.badgeInfo }}
                               >
-                                <Text className="text-xs font-semibold" style={{ color: "#ffffff" }}>
+                                <Text className="text-xs font-semibold" style={{ color: isDark ? "#ffffff" : "#2563eb" }}>
                                   System
                                 </Text>
                               </Box>

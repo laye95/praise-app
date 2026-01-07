@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   FlatList,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
@@ -93,13 +93,14 @@ export function CreateTeamModal({
 }: CreateTeamModalProps) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const isDark = theme.pageBg === "#0f172a";
   const slideAnim = useRef(new Animated.Value(500)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedType, setSelectedType] = useState<TeamType>("worship");
-  const [selectedLeaderIds, setSelectedLeaderIds] = useState<Set<string>>(
+  const [selectedAdminIds, setSelectedAdminIds] = useState<Set<string>>(
     new Set(),
   );
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(
@@ -155,9 +156,9 @@ export function CreateTeamModal({
     });
   };
 
-  const handleToggleLeader = (userId: string) => {
+  const handleToggleAdmin = (userId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedLeaderIds((prev) => {
+    setSelectedAdminIds((prev) => {
       const next = new Set(prev);
       if (next.has(userId)) {
         next.delete(userId);
@@ -181,10 +182,10 @@ export function CreateTeamModal({
         next.delete(userId);
       } else {
         next.add(userId);
-        setSelectedLeaderIds((prevLeaders) => {
-          const nextLeaders = new Set(prevLeaders);
-          nextLeaders.delete(userId);
-          return nextLeaders;
+        setSelectedAdminIds((prevAdmins) => {
+          const nextAdmins = new Set(prevAdmins);
+          nextAdmins.delete(userId);
+          return nextAdmins;
         });
       }
       return next;
@@ -192,21 +193,21 @@ export function CreateTeamModal({
   };
 
   const handleCreate = async () => {
-    if (!name.trim() || (selectedLeaderIds.size === 0 && selectedMemberIds.size === 0) || isCreating) return;
+    if (!name.trim() || (selectedAdminIds.size === 0 && selectedMemberIds.size === 0) || isCreating) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Keyboard.dismiss();
     await onCreate({
       name: name.trim(),
       description: description.trim() || undefined,
       type: selectedType,
-      leader_ids: Array.from(selectedLeaderIds),
+      admin_ids: Array.from(selectedAdminIds),
       member_ids: Array.from(selectedMemberIds),
     });
   };
 
   const canCreate =
     name.trim().length >= 2 &&
-    (selectedLeaderIds.size > 0 || selectedMemberIds.size > 0) &&
+    (selectedAdminIds.size > 0 || selectedMemberIds.size > 0) &&
     !isCreating;
 
   const filteredMembers = members.filter((member) => {
@@ -265,13 +266,12 @@ export function CreateTeamModal({
             maxHeight: "95%",
           }}
         >
-          <SafeAreaView edges={["bottom"]}>
-            <Box
-              className="rounded-t-3xl"
-              style={{
-                backgroundColor: theme.cardBg,
-                borderTopWidth: 1,
-                borderTopColor: theme.cardBorder,
+          <Box
+            className="rounded-t-3xl"
+            style={{
+              backgroundColor: theme.cardBg,
+              borderTopWidth: 1,
+              borderTopColor: theme.cardBorder,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: -4 },
                 shadowOpacity: isDark ? 0.3 : 0.1,
@@ -606,9 +606,9 @@ export function CreateTeamModal({
                               style={{ maxHeight: 240 }}
                             >
                               {filteredMembers.map((item) => {
-                                const isLeader = selectedLeaderIds.has(item.id);
+                                const isAdmin = selectedAdminIds.has(item.id);
                                 const isMember = selectedMemberIds.has(item.id);
-                                const isSelected = isLeader || isMember;
+                                const isSelected = isAdmin || isMember;
                                 const initials = getInitials(
                                   item.full_name,
                                   item.email,
@@ -634,7 +634,7 @@ export function CreateTeamModal({
                                         style={{
                                           width: 40,
                                           height: 40,
-                                          backgroundColor: isLeader
+                                          backgroundColor: isAdmin
                                             ? theme.buttonPrimary
                                             : isMember
                                               ? theme.textSecondary
@@ -646,7 +646,7 @@ export function CreateTeamModal({
                                         <Text
                                           className="text-sm font-semibold"
                                           style={{
-                                            color: isLeader || isMember
+                                            color: isAdmin || isMember
                                               ? "#ffffff"
                                               : theme.buttonPrimary,
                                           }}
@@ -673,18 +673,18 @@ export function CreateTeamModal({
                                       <HStack className="gap-2">
                                         <TouchableOpacity
                                           activeOpacity={0.7}
-                                          onPress={() => handleToggleLeader(item.id)}
+                                          onPress={() => handleToggleAdmin(item.id)}
                                           style={{
                                             paddingHorizontal: 10,
                                             paddingVertical: 6,
                                             borderRadius: 6,
-                                            backgroundColor: isLeader
+                                            backgroundColor: isAdmin
                                               ? theme.buttonPrimary
                                               : isDark
                                                 ? "#1e293b"
                                                 : "#ffffff",
                                             borderWidth: 1,
-                                            borderColor: isLeader
+                                            borderColor: isAdmin
                                               ? theme.buttonPrimary
                                               : theme.cardBorder,
                                           }}
@@ -692,12 +692,12 @@ export function CreateTeamModal({
                                           <Text
                                             className="text-xs font-semibold"
                                             style={{
-                                              color: isLeader
+                                              color: isAdmin
                                                 ? "#ffffff"
                                                 : theme.textSecondary,
                                             }}
                                           >
-                                            {t("teams.leader")}
+                                            {t("teams.admin")}
                                           </Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity
@@ -743,12 +743,13 @@ export function CreateTeamModal({
                 </ScrollView>
 
                 <Box
-                  className="px-6 pt-5 pb-6 border-t"
+                  className="px-6 pt-5 border-t"
                   style={{
                     borderTopWidth: 1,
                     borderTopColor: theme.cardBorder,
                     backgroundColor: theme.cardBg,
                     minHeight: 140,
+                    paddingBottom: Math.max(insets.bottom, 16),
                   }}
                 >
                   <VStack className="gap-3">
@@ -806,7 +807,6 @@ export function CreateTeamModal({
                 </Box>
               </VStack>
             </Box>
-          </SafeAreaView>
         </Animated.View>
       </Animated.View>
     </Modal>

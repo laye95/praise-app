@@ -766,8 +766,10 @@ CREATE TABLE public.team_members (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  role TEXT NOT NULL CHECK (role IN ('leader', 'member')),
+  role TEXT NOT NULL CHECK (role IN ('admin', 'member')),
+  position TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   UNIQUE(team_id, user_id)
 );
 
@@ -793,7 +795,31 @@ CREATE POLICY "Users can view team members for their church teams"
     )
   );
 
--- Function to check if current user is a team leader
+-- Helper function to check if user is a team admin (replaces is_team_leader)
+CREATE OR REPLACE FUNCTION public.is_team_admin(check_team_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  is_admin BOOLEAN;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.team_members tm
+    WHERE tm.team_id = check_team_id
+    AND tm.user_id = auth.uid()
+    AND tm.role = 'admin'
+  ) INTO is_admin;
+  
+  RETURN COALESCE(is_admin, false);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_team_admin(UUID) TO authenticated;
+
+-- Function to check if current user is a team leader (deprecated, will be dropped)
 CREATE OR REPLACE FUNCTION public.is_team_leader(check_team_id UUID)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -856,6 +882,9 @@ CREATE POLICY "Authorized users and team leaders can remove team members"
     )
   );
 
+-- Drop old UPDATE policy that uses is_team_leader
+DROP POLICY IF EXISTS "Authorized users can update team member roles" ON public.team_members;
+
 -- Users with teams:update can update team member roles
 CREATE POLICY "Authorized users can update team member roles"
   ON public.team_members FOR UPDATE
@@ -866,12 +895,406 @@ CREATE POLICY "Authorized users can update team member roles"
       WHERE t.id = team_members.team_id
       AND public.has_permission(t.church_id, 'teams:update')
     )
+    OR public.is_team_admin(team_members.team_id)
+    OR team_members.user_id = auth.uid()
   )
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.teams t
       WHERE t.id = team_members.team_id
       AND public.has_permission(t.church_id, 'teams:update')
+    )
+    OR public.is_team_admin(team_members.team_id)
+    OR team_members.user_id = auth.uid()
+  );
+
+-- Migrate existing team_members roles from 'leader' to 'admin'
+UPDATE public.team_members
+SET role = 'admin'
+WHERE role = 'leader';
+
+-- Update team_members role constraint to use 'admin' instead of 'leader'
+ALTER TABLE public.team_members
+DROP CONSTRAINT IF EXISTS team_members_role_check;
+
+ALTER TABLE public.team_members
+ADD CONSTRAINT team_members_role_check CHECK (role IN ('admin', 'member'));
+
+-- Note: team_calendar_assignments table is not created in this migration
+-- Positions are set via seed files or managed directly in team_members.position
+
+-- Drop RLS policies that depend on is_team_leader first (must be done before dropping function)
+DROP POLICY IF EXISTS "Authorized users and team leaders can add team members" ON public.team_members;
+DROP POLICY IF EXISTS "Authorized users and team leaders can remove team members" ON public.team_members;
+
+-- Drop is_team_leader function (CASCADE will drop any remaining dependencies)
+DROP FUNCTION IF EXISTS public.is_team_leader(UUID) CASCADE;
+
+-- Create new RLS policies using is_team_admin
+
+CREATE POLICY "Authorized users and team admins can add team members"
+  ON public.team_members FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    (
+      EXISTS (
+        SELECT 1 FROM public.teams t
+        WHERE t.id = team_members.team_id
+        AND public.has_permission(t.church_id, 'teams:update')
+      )
+    )
+    OR (
+      public.is_team_admin(team_members.team_id)
+      AND team_members.role = 'member'
+    )
+  );
+
+CREATE POLICY "Authorized users and team admins can remove team members"
+  ON public.team_members FOR DELETE
+  TO authenticated
+  USING (
+    (
+      EXISTS (
+        SELECT 1 FROM public.teams t
+        WHERE t.id = team_members.team_id
+        AND public.has_permission(t.church_id, 'teams:update')
+      )
+    )
+    OR (
+      public.is_team_admin(team_members.team_id)
+      AND team_members.role = 'member'
+    )
+  );
+
+-- ============================================================================
+-- Team Groups Tables (Groups within teams)
+-- ============================================================================
+
+-- Create team_groups table
+CREATE TABLE public.team_groups (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  UNIQUE(team_id, name)
+);
+
+CREATE INDEX idx_team_groups_team_id ON public.team_groups(team_id);
+ALTER TABLE public.team_groups ENABLE ROW LEVEL SECURITY;
+
+-- Create team_group_members table
+CREATE TABLE public.team_group_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  group_id UUID NOT NULL REFERENCES public.team_groups(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('leader', 'member')),
+  position TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  UNIQUE(group_id, user_id)
+);
+
+CREATE INDEX idx_team_group_members_group_id ON public.team_group_members(group_id);
+CREATE INDEX idx_team_group_members_user_id ON public.team_group_members(user_id);
+ALTER TABLE public.team_group_members ENABLE ROW LEVEL SECURITY;
+
+CREATE TRIGGER set_updated_at_team_group_members
+  BEFORE UPDATE ON public.team_group_members
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_updated_at();
+
+-- Function to check if user is already in another group in the same team
+CREATE OR REPLACE FUNCTION public.is_user_in_team_group(
+  check_team_id UUID,
+  check_user_id UUID
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  existing_group_id UUID;
+BEGIN
+  SELECT tgm.group_id INTO existing_group_id
+  FROM public.team_group_members tgm
+  INNER JOIN public.team_groups tg ON tg.id = tgm.group_id
+  WHERE tg.team_id = check_team_id
+    AND tgm.user_id = check_user_id
+  LIMIT 1;
+  
+  RETURN existing_group_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_user_in_team_group(UUID, UUID) TO authenticated;
+
+-- Function to check if current user is a group leader
+CREATE OR REPLACE FUNCTION public.is_group_leader(check_group_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  is_leader BOOLEAN;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.team_group_members tgm
+    WHERE tgm.group_id = check_group_id
+    AND tgm.user_id = auth.uid()
+    AND tgm.role = 'leader'
+  ) INTO is_leader;
+  
+  RETURN COALESCE(is_leader, false);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_group_leader(UUID) TO authenticated;
+
+-- Function to get user's group for a team
+CREATE OR REPLACE FUNCTION public.get_user_group_for_team(
+  check_team_id UUID,
+  check_user_id UUID
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  group_id UUID;
+BEGIN
+  SELECT tgm.group_id INTO group_id
+  FROM public.team_group_members tgm
+  INNER JOIN public.team_groups tg ON tg.id = tgm.group_id
+  WHERE tg.team_id = check_team_id
+    AND tgm.user_id = check_user_id
+  LIMIT 1;
+  
+  RETURN group_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_user_group_for_team(UUID, UUID) TO authenticated;
+
+-- Function to check if user can update group member role
+CREATE OR REPLACE FUNCTION public.can_update_group_member_role(
+  check_group_id UUID,
+  new_role TEXT
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+DECLARE
+  team_id UUID;
+  church_id UUID;
+  is_admin BOOLEAN;
+  is_leader BOOLEAN;
+BEGIN
+  SELECT tg.team_id, t.church_id INTO team_id, church_id
+  FROM public.team_groups tg
+  INNER JOIN public.teams t ON t.id = tg.team_id
+  WHERE tg.id = check_group_id;
+  
+  IF team_id IS NULL OR church_id IS NULL THEN
+    RETURN false;
+  END IF;
+  
+  SELECT public.has_permission(church_id, 'teams:update') INTO is_admin;
+  
+  SELECT public.is_group_leader(check_group_id) INTO is_leader;
+  
+  IF new_role = 'leader' THEN
+    RETURN COALESCE(is_admin, false);
+  ELSE
+    RETURN COALESCE(is_admin, false) OR COALESCE(is_leader, false);
+  END IF;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.can_update_group_member_role(UUID, TEXT) TO authenticated;
+
+-- Trigger function to enforce exclusive group membership (one group per team per user)
+CREATE OR REPLACE FUNCTION public.enforce_exclusive_group_membership()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  team_id UUID;
+  existing_group_id UUID;
+BEGIN
+  -- Get the team_id for this group
+  SELECT tg.team_id INTO team_id
+  FROM public.team_groups tg
+  WHERE tg.id = NEW.group_id;
+  
+  -- Check if user is already in another group in this team
+  SELECT public.get_user_group_for_team(team_id, NEW.user_id) INTO existing_group_id;
+  
+  IF existing_group_id IS NOT NULL AND existing_group_id != NEW.group_id THEN
+    RAISE EXCEPTION 'User is already a member of another group in this team';
+  END IF;
+  
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER enforce_exclusive_group_membership_trigger
+  BEFORE INSERT OR UPDATE ON public.team_group_members
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_exclusive_group_membership();
+
+-- RLS Policies for team_groups
+
+-- Users with teams:read can view groups for their church teams
+CREATE POLICY "Users can view groups for their church teams"
+  ON public.team_groups FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_groups.team_id
+      AND public.has_permission(t.church_id, 'teams:read')
+    )
+  );
+
+-- Users with teams:update can create groups
+CREATE POLICY "Authorized users can create groups"
+  ON public.team_groups FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_groups.team_id
+      AND public.has_permission(t.church_id, 'teams:update')
+    )
+  );
+
+-- Users with teams:update can update groups
+CREATE POLICY "Authorized users can update groups"
+  ON public.team_groups FOR UPDATE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_groups.team_id
+      AND public.has_permission(t.church_id, 'teams:update')
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_groups.team_id
+      AND public.has_permission(t.church_id, 'teams:update')
+    )
+  );
+
+-- Users with teams:update can delete groups
+CREATE POLICY "Authorized users can delete groups"
+  ON public.team_groups FOR DELETE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_groups.team_id
+      AND public.has_permission(t.church_id, 'teams:update')
+    )
+  );
+
+-- RLS Policies for team_group_members
+
+-- Users with teams:read can view group members for their church teams
+CREATE POLICY "Users can view group members for their church teams"
+  ON public.team_group_members FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.team_groups tg
+      INNER JOIN public.teams t ON t.id = tg.team_id
+      WHERE tg.id = team_group_members.group_id
+      AND public.has_permission(t.church_id, 'teams:read')
+    )
+  );
+
+-- Team admins and group leaders can add group members
+CREATE POLICY "Authorized users and group leaders can add group members"
+  ON public.team_group_members FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    (
+      EXISTS (
+        SELECT 1 FROM public.team_groups tg
+        INNER JOIN public.teams t ON t.id = tg.team_id
+        WHERE tg.id = team_group_members.group_id
+        AND public.has_permission(t.church_id, 'teams:update')
+      )
+    )
+    OR (
+      public.is_group_leader(team_group_members.group_id)
+      AND team_group_members.role = 'member'
+    )
+  );
+
+-- Team admins and group leaders can remove group members
+CREATE POLICY "Authorized users and group leaders can remove group members"
+  ON public.team_group_members FOR DELETE
+  TO authenticated
+  USING (
+    (
+      EXISTS (
+        SELECT 1 FROM public.team_groups tg
+        INNER JOIN public.teams t ON t.id = tg.team_id
+        WHERE tg.id = team_group_members.group_id
+        AND public.has_permission(t.church_id, 'teams:update')
+      )
+    )
+    OR (
+      public.is_group_leader(team_group_members.group_id)
+      AND team_group_members.role = 'member'
+    )
+  );
+
+-- Team admins and church admins can update any role, group leaders can only update member roles
+CREATE POLICY "Authorized users and group leaders can update group member roles"
+  ON public.team_group_members FOR UPDATE
+  TO authenticated
+  USING (
+    (
+      EXISTS (
+        SELECT 1 FROM public.team_groups tg
+        INNER JOIN public.teams t ON t.id = tg.team_id
+        WHERE tg.id = team_group_members.group_id
+        AND (
+          public.has_permission(t.church_id, 'teams:update')
+          OR public.is_team_admin(t.id)
+        )
+      )
+    )
+    OR (
+      public.is_group_leader(team_group_members.group_id)
+    )
+  )
+  WITH CHECK (
+    (
+      EXISTS (
+        SELECT 1 FROM public.team_groups tg
+        INNER JOIN public.teams t ON t.id = tg.team_id
+        WHERE tg.id = team_group_members.group_id
+        AND (
+          public.has_permission(t.church_id, 'teams:update')
+          OR public.is_team_admin(t.id)
+        )
+      )
+    )
+    OR (
+      public.is_group_leader(team_group_members.group_id)
+      AND team_group_members.role = 'member'
     )
   );
 
@@ -1021,4 +1444,480 @@ $$;
 
 -- Grant execute permission to authenticated users
 GRANT EXECUTE ON FUNCTION public.assign_pastor_role_to_user(UUID, UUID) TO authenticated;
+
+-- ============================================================================
+-- Team Calendar and Documents Feature
+-- ============================================================================
+
+-- Create team_calendar_events table
+CREATE TABLE public.team_calendar_events (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  group_id UUID REFERENCES public.team_groups(id) ON DELETE SET NULL,
+  date DATE NOT NULL,
+  end_date DATE,
+  start_time TIME,
+  end_time TIME,
+  is_all_day BOOLEAN DEFAULT false NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  created_by UUID NOT NULL REFERENCES public.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_team_calendar_events_team_id ON public.team_calendar_events(team_id);
+CREATE INDEX idx_team_calendar_events_group_id ON public.team_calendar_events(group_id);
+CREATE INDEX idx_team_calendar_events_date ON public.team_calendar_events(date);
+CREATE INDEX idx_team_calendar_events_end_date ON public.team_calendar_events(end_date);
+
+-- Create team_calendar_event_members table for individual member assignments
+CREATE TABLE public.team_calendar_event_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  event_id UUID NOT NULL REFERENCES public.team_calendar_events(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  UNIQUE(event_id, user_id)
+);
+
+CREATE INDEX idx_team_calendar_event_members_event_id ON public.team_calendar_event_members(event_id);
+CREATE INDEX idx_team_calendar_event_members_user_id ON public.team_calendar_event_members(user_id);
+ALTER TABLE public.team_calendar_event_members ENABLE ROW LEVEL SECURITY;
+
+-- Note: Team member positions are stored in team_members.position
+-- This allows team admins and members themselves to manage their positions
+-- Events can either have a group_id assigned OR individual members via team_calendar_event_members
+
+-- Create team_documents table
+CREATE TABLE public.team_documents (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  event_id UUID REFERENCES public.team_calendar_events(id) ON DELETE SET NULL,
+  file_name TEXT NOT NULL,
+  file_url TEXT NOT NULL,
+  file_size INTEGER,
+  mime_type TEXT DEFAULT 'application/pdf',
+  uploaded_by UUID NOT NULL REFERENCES public.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_team_documents_team_id ON public.team_documents(team_id);
+CREATE INDEX idx_team_documents_event_id ON public.team_documents(event_id);
+
+-- Helper function: Check if user is a team member
+CREATE OR REPLACE FUNCTION public.is_team_member(check_team_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  is_member BOOLEAN;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.team_members tm
+    WHERE tm.team_id = check_team_id
+    AND tm.user_id = auth.uid()
+  ) INTO is_member;
+  
+  RETURN COALESCE(is_member, false);
+END;
+$$;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.is_team_member(UUID) TO authenticated;
+
+-- Helper function: Check if team is worship team
+CREATE OR REPLACE FUNCTION public.is_worship_team(check_team_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  team_type TEXT;
+BEGIN
+  SELECT type INTO team_type
+  FROM public.teams
+  WHERE id = check_team_id;
+  
+  RETURN team_type = 'worship';
+END;
+$$;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.is_worship_team(UUID) TO authenticated;
+
+-- Helper function: Check if user has Pastor role in church
+CREATE OR REPLACE FUNCTION public.is_pastor(check_church_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  is_pastor_role BOOLEAN;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.users u
+    INNER JOIN public.user_church_roles ucr ON ucr.user_id = u.id
+    INNER JOIN public.church_roles cr ON cr.id = ucr.church_role_id
+    WHERE u.id = auth.uid()
+      AND cr.church_id = check_church_id
+      AND cr.name = 'Pastor'
+  ) INTO is_pastor_role;
+  
+  RETURN COALESCE(is_pastor_role, false);
+END;
+$$;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.is_pastor(UUID) TO authenticated;
+
+-- Enable Row Level Security
+ALTER TABLE public.team_calendar_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.team_documents ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================================
+-- RLS Policies for team_calendar_events
+-- ============================================================================
+
+-- Team members and pastors can view calendar events
+CREATE POLICY "Team members and pastors can view calendar events"
+  ON public.team_calendar_events FOR SELECT
+  TO authenticated
+  USING (
+    public.is_team_member(team_id)
+    OR EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_calendar_events.team_id
+      AND public.is_pastor(t.church_id)
+    )
+  );
+
+-- Team leaders, pastors, and admins can create calendar events
+CREATE POLICY "Team leaders, pastors, and admins can create calendar events"
+  ON public.team_calendar_events FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_calendar_events.team_id
+      AND (
+        public.is_pastor(t.church_id)
+        OR public.has_permission(t.church_id, 'teams:update')
+        OR (
+          public.is_team_member(team_calendar_events.team_id)
+          AND public.is_team_admin(team_calendar_events.team_id)
+        )
+      )
+    )
+  );
+
+-- Team leaders, pastors, and admins can update calendar events
+CREATE POLICY "Team leaders, pastors, and admins can update calendar events"
+  ON public.team_calendar_events FOR UPDATE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_calendar_events.team_id
+      AND (
+        public.is_pastor(t.church_id)
+        OR public.has_permission(t.church_id, 'teams:update')
+        OR (
+          public.is_team_member(team_calendar_events.team_id)
+          AND public.is_team_admin(team_calendar_events.team_id)
+        )
+      )
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_calendar_events.team_id
+      AND (
+        public.is_pastor(t.church_id)
+        OR public.has_permission(t.church_id, 'teams:update')
+        OR (
+          public.is_team_member(team_calendar_events.team_id)
+          AND public.is_team_admin(team_calendar_events.team_id)
+        )
+      )
+    )
+  );
+
+-- Team leaders, pastors, and admins can delete calendar events
+CREATE POLICY "Team leaders, pastors, and admins can delete calendar events"
+  ON public.team_calendar_events FOR DELETE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_calendar_events.team_id
+      AND (
+        public.is_pastor(t.church_id)
+        OR public.has_permission(t.church_id, 'teams:update')
+        OR (
+          public.is_team_member(team_calendar_events.team_id)
+          AND public.is_team_admin(team_calendar_events.team_id)
+        )
+      )
+    )
+  );
+
+-- ============================================================================
+-- RLS Policies for team_calendar_event_members
+-- ============================================================================
+
+-- Team members and pastors can view event member assignments
+CREATE POLICY "Team members and pastors can view event member assignments"
+  ON public.team_calendar_event_members FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.team_calendar_events tce
+      WHERE tce.id = team_calendar_event_members.event_id
+      AND (
+        public.is_team_member(tce.team_id)
+        OR EXISTS (
+          SELECT 1 FROM public.teams t
+          WHERE t.id = tce.team_id
+          AND public.is_pastor(t.church_id)
+        )
+      )
+    )
+  );
+
+-- Team leaders, pastors, and admins can manage event member assignments
+CREATE POLICY "Team leaders, pastors, and admins can manage event member assignments"
+  ON public.team_calendar_event_members FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.team_calendar_events tce
+      WHERE tce.id = team_calendar_event_members.event_id
+      AND EXISTS (
+        SELECT 1 FROM public.teams t
+        WHERE t.id = tce.team_id
+        AND (
+          public.is_pastor(t.church_id)
+          OR public.has_permission(t.church_id, 'teams:update')
+          OR (
+            public.is_team_member(tce.team_id)
+            AND public.is_team_admin(tce.team_id)
+          )
+        )
+      )
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.team_calendar_events tce
+      WHERE tce.id = team_calendar_event_members.event_id
+      AND EXISTS (
+        SELECT 1 FROM public.teams t
+        WHERE t.id = tce.team_id
+        AND (
+          public.is_pastor(t.church_id)
+          OR public.has_permission(t.church_id, 'teams:update')
+          OR (
+            public.is_team_member(tce.team_id)
+            AND public.is_team_admin(tce.team_id)
+          )
+        )
+      )
+    )
+  );
+
+-- ============================================================================
+-- Note: Team member positions are stored in team_members.position
+-- Team admins and members themselves can update position via the team_members UPDATE policy
+-- Events can either have a group_id assigned OR individual members via team_calendar_event_members
+
+-- ============================================================================
+-- RLS Policies for team_documents
+-- ============================================================================
+
+-- Worship team members and pastors can view documents
+CREATE POLICY "Worship team members and pastors can view documents"
+  ON public.team_documents FOR SELECT
+  TO authenticated
+  USING (
+    public.is_worship_team(team_id)
+    AND (
+      public.is_team_member(team_id)
+      OR EXISTS (
+        SELECT 1 FROM public.teams t
+        WHERE t.id = team_documents.team_id
+        AND public.is_pastor(t.church_id)
+      )
+    )
+  );
+
+-- All worship team members and pastors can upload documents
+CREATE POLICY "Worship team members and pastors can upload documents"
+  ON public.team_documents FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    public.is_worship_team(team_id)
+    AND (
+      public.is_team_member(team_id)
+      OR EXISTS (
+        SELECT 1 FROM public.teams t
+        WHERE t.id = team_documents.team_id
+        AND public.is_pastor(t.church_id)
+      )
+    )
+  );
+
+-- Only worship team leaders and pastors can update documents
+CREATE POLICY "Worship team leaders and pastors can update documents"
+  ON public.team_documents FOR UPDATE
+  TO authenticated
+  USING (
+    public.is_worship_team(team_id)
+    AND EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_documents.team_id
+      AND (
+        public.is_pastor(t.church_id)
+        OR public.has_permission(t.church_id, 'teams:update')
+        OR (
+          public.is_team_member(team_documents.team_id)
+          AND public.is_team_admin(team_documents.team_id)
+        )
+      )
+    )
+  )
+  WITH CHECK (
+    public.is_worship_team(team_id)
+    AND EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_documents.team_id
+      AND (
+        public.is_pastor(t.church_id)
+        OR public.has_permission(t.church_id, 'teams:update')
+        OR (
+          public.is_team_member(team_documents.team_id)
+          AND public.is_team_admin(team_documents.team_id)
+        )
+      )
+    )
+  );
+
+-- Only worship team leaders and pastors can delete documents
+CREATE POLICY "Worship team leaders and pastors can delete documents"
+  ON public.team_documents FOR DELETE
+  TO authenticated
+  USING (
+    public.is_worship_team(team_id)
+    AND EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id = team_documents.team_id
+      AND (
+        public.is_pastor(t.church_id)
+        OR public.has_permission(t.church_id, 'teams:update')
+        OR (
+          public.is_team_member(team_documents.team_id)
+          AND public.is_team_admin(team_documents.team_id)
+        )
+      )
+    )
+  );
+
+-- Create trigger to update updated_at timestamp
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_team_calendar_events_updated_at
+  BEFORE UPDATE ON public.team_calendar_events
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_team_documents_updated_at
+  BEFORE UPDATE ON public.team_documents
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
+-- ============================================================================
+-- Storage Bucket Setup for Team Documents
+-- ============================================================================
+
+-- Create storage bucket for team documents
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'team-documents',
+  'team-documents',
+  false,
+  10485760,
+  ARRAY['application/pdf']
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- RLS Policies for Storage Bucket
+-- Worship team members and pastors can view files
+CREATE POLICY "Worship team members and pastors can view documents"
+  ON storage.objects FOR SELECT
+  TO authenticated
+  USING (
+    bucket_id = 'team-documents'
+    AND EXISTS (
+      SELECT 1 FROM public.team_documents td
+      JOIN public.teams t ON t.id = td.team_id
+      WHERE td.file_url LIKE '%' || storage.objects.name || '%'
+      AND public.is_worship_team(td.team_id)
+      AND (
+        public.is_team_member(td.team_id)
+        OR public.is_pastor(t.church_id)
+      )
+    )
+  );
+
+-- All worship team members and pastors can upload files
+CREATE POLICY "Worship team members and pastors can upload documents"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    bucket_id = 'team-documents'
+    AND EXISTS (
+      SELECT 1 FROM public.teams t
+      WHERE t.id::text = split_part(storage.objects.name, '/', 1)
+      AND public.is_worship_team(t.id)
+      AND (
+        public.is_team_member(t.id)
+        OR public.is_pastor(t.church_id)
+      )
+    )
+  );
+
+-- Only worship team leaders and pastors can delete files
+CREATE POLICY "Worship team leaders and pastors can delete documents"
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (
+    bucket_id = 'team-documents'
+    AND EXISTS (
+      SELECT 1 FROM public.team_documents td
+      JOIN public.teams t ON t.id = td.team_id
+      WHERE td.file_url LIKE '%' || storage.objects.name || '%'
+      AND public.is_worship_team(td.team_id)
+      AND (
+        public.is_pastor(t.church_id)
+        OR public.has_permission(t.church_id, 'teams:update')
+        OR (
+          public.is_team_member(td.team_id)
+          AND public.is_team_admin(td.team_id)
+        )
+      )
+    )
+  );
 

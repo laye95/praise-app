@@ -18,7 +18,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface EditTeamModalProps {
   visible: boolean;
@@ -39,6 +39,7 @@ export function EditTeamModal({
 }: EditTeamModalProps) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const isDark = theme.pageBg === "#0f172a";
   const slideAnim = useRef(new Animated.Value(500)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -141,13 +142,12 @@ export function EditTeamModal({
             maxHeight: "98%",
           }}
         >
-          <SafeAreaView edges={["bottom"]}>
-            <Box
-              className="rounded-t-3xl"
-              style={{
-                backgroundColor: theme.cardBg,
-                borderTopWidth: 1,
-                borderTopColor: theme.cardBorder,
+          <Box
+            className="rounded-t-3xl"
+            style={{
+              backgroundColor: theme.cardBg,
+              borderTopWidth: 1,
+              borderTopColor: theme.cardBorder,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: -4 },
                 shadowOpacity: isDark ? 0.3 : 0.1,
@@ -306,11 +306,12 @@ export function EditTeamModal({
                 </ScrollView>
 
                 <Box
-                  className="border-t px-6 pb-6 pt-4"
+                  className="border-t px-6 pt-4"
                   style={{
                     borderTopWidth: 1,
                     borderTopColor: theme.cardBorder,
                     backgroundColor: theme.cardBg,
+                    paddingBottom: Math.max(insets.bottom, 16),
                   }}
                 >
                   <VStack className="gap-3">
@@ -370,7 +371,6 @@ export function EditTeamModal({
                 </Box>
               </VStack>
             </Box>
-          </SafeAreaView>
         </Animated.View>
       </Animated.View>
     </Modal>

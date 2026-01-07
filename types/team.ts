@@ -8,7 +8,8 @@ export type TeamType =
   | "outreach"
   | "other";
 
-export type TeamMemberRole = "leader" | "member";
+export type TeamMemberRole = "admin" | "member";
+export type TeamGroupMemberRole = "leader" | "member";
 
 export interface Team {
   id: string;
@@ -25,7 +26,9 @@ export interface TeamMember {
   team_id: string;
   user_id: string;
   role: TeamMemberRole;
+  position?: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface TeamMemberWithUser extends TeamMember {
@@ -41,11 +44,42 @@ export interface TeamWithMembers extends Team {
   member_count?: number;
 }
 
+export interface TeamGroup {
+  id: string;
+  team_id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeamGroupMember {
+  id: string;
+  group_id: string;
+  user_id: string;
+  role: TeamGroupMemberRole;
+  position?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface TeamGroupMemberWithUser extends TeamGroupMember {
+  user: {
+    id: string;
+    email: string;
+    full_name?: string;
+  };
+}
+
+export interface TeamGroupWithMembers extends TeamGroup {
+  members?: TeamGroupMemberWithUser[];
+  member_count?: number;
+}
+
 export interface CreateTeamData {
   name: string;
   description?: string;
   type: TeamType;
-  leader_ids: string[];
+  admin_ids: string[];
   member_ids?: string[];
 }
 

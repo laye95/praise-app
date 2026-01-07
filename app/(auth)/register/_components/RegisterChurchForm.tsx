@@ -10,6 +10,7 @@ import { useState } from "react";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface RegisterChurchFormProps {
   onSubmit: (data: {
@@ -61,7 +62,8 @@ export function RegisterChurchForm({
 }: RegisterChurchFormProps) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const isDark = theme.pageBg === "#0f172a";
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [internalStep, setInternalStep] = useState(1);
   const currentStep = controlledStep ?? internalStep;
   const setCurrentStep = onStepChange ?? setInternalStep;
@@ -333,7 +335,7 @@ export function RegisterChurchForm({
                   justifyContent: "center",
                 }}
               >
-                <Ionicons name="person" size={26} color={theme.buttonPrimary} />
+                <Ionicons name="person" size={26} color={isDark ? "#ffffff" : theme.buttonPrimary} />
               </Box>
               <VStack className="flex-1 gap-1">
                 <HStack className="items-center gap-2">

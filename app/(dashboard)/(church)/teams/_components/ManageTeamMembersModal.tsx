@@ -8,7 +8,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
@@ -53,6 +53,7 @@ export function ManageTeamMembersModal({
 }: ManageTeamMembersModalProps) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const isDark = theme.pageBg === "#0f172a";
   const slideAnim = useRef(new Animated.Value(500)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -165,17 +166,15 @@ export function ManageTeamMembersModal({
             maxHeight: "98%",
           }}
         >
-          <SafeAreaView edges={["bottom"]}>
-            <Box
-              className="rounded-t-3xl"
-              style={{
-                backgroundColor: theme.cardBg,
-                borderTopWidth: 1,
-                borderTopColor: theme.cardBorder,
-                paddingTop: 8,
-                paddingBottom: 32,
-              }}
-            >
+          <Box
+            className="rounded-t-3xl"
+            style={{
+              backgroundColor: theme.cardBg,
+              borderTopWidth: 1,
+              borderTopColor: theme.cardBorder,
+              paddingTop: 8,
+            }}
+          >
               <VStack className="mb-4">
                 <Box className="mb-3 items-center px-6">
                   <Box
@@ -395,7 +394,10 @@ export function ManageTeamMembersModal({
                 />
               </Box>
 
-              <Box className="px-6 mt-4">
+              <Box
+                className="px-6 mt-4"
+                style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+              >
                 <Button
                   onPress={handleClose}
                   action="secondary"
@@ -412,7 +414,6 @@ export function ManageTeamMembersModal({
                 </Button>
               </Box>
             </Box>
-          </SafeAreaView>
         </Animated.View>
       </Animated.View>
     </Modal>

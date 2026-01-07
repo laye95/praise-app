@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { User } from "@/types/user";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import * as Haptics from "expo-haptics";
 
 interface MemberCardProps {
@@ -32,7 +33,8 @@ export function MemberCard({
 }: MemberCardProps) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const isDark = theme.pageBg === "#0f172a";
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   const translateRoleName = (roleName: string): string => {
     const roleMap: Record<string, string> = {
@@ -116,7 +118,7 @@ export function MemberCard({
   const textPrimary = theme.textPrimary;
   const textSecondary = theme.textSecondary;
   const avatarBg = getAvatarBgColor();
-  const avatarText = "#ffffff";
+  const avatarText = isDark ? "#ffffff" : theme.buttonPrimary;
 
   const CardContent = (
     <Box

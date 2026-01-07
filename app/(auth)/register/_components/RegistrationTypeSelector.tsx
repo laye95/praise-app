@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { TouchableOpacity } from "react-native";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 type RegistrationType = "church" | "member" | null;
 
@@ -17,6 +18,8 @@ interface RegistrationTypeSelectorProps {
 export function RegistrationTypeSelector({ onSelect }: RegistrationTypeSelectorProps) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <VStack className="gap-6">
@@ -41,7 +44,7 @@ export function RegistrationTypeSelector({ onSelect }: RegistrationTypeSelectorP
             <Box className="flex-row items-center justify-between">
               <Box className="flex-row items-center gap-5 flex-1">
                 <Box className="rounded-xl p-3" style={{ backgroundColor: theme.avatarPrimary }}>
-                  <Ionicons name="business" size={32} color={theme.buttonPrimary} />
+                  <Ionicons name="business" size={32} color={isDark ? "#ffffff" : theme.buttonPrimary} />
                 </Box>
                 <VStack className="flex-1 gap-1.5">
                   <Text className="font-bold text-lg" style={{ color: theme.textPrimary }}>

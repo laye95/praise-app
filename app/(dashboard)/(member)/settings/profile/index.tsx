@@ -8,15 +8,30 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/hooks/useTheme";
 import { router } from "expo-router";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useThemePreference } from "@/contexts/ThemeContext";
 import * as Haptics from "expo-haptics";
 
 export default function ProfileScreen() {
   const theme = useTheme();
   const isDark = theme.pageBg === "#0f172a";
   const { t, locale } = useTranslation();
+  const { themePreference } = useThemePreference();
   
   const getLanguageName = () => {
     return locale === "nl" ? "Nederlands" : "English";
+  };
+
+  const getThemeName = () => {
+    switch (themePreference) {
+      case "light":
+        return t("profile.theme.light");
+      case "dark":
+        return t("profile.theme.dark");
+      case "system":
+        return t("profile.theme.system");
+      default:
+        return t("profile.theme.system");
+    }
   };
 
   return (
@@ -210,9 +225,9 @@ export default function ProfileScreen() {
                   activeOpacity={0.7}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push("/(dashboard)/(member)/settings/profile/theme");
                   }}
                   className="cursor-pointer"
-                  style={{ opacity: 0.5 }}
                 >
                   <HStack className="items-center px-4 py-4">
                     <Box className="mr-3">
@@ -223,18 +238,10 @@ export default function ProfileScreen() {
                         {t("profile.appearance")}
                       </Text>
                       <Text className="text-xs" style={{ color: theme.textSecondary }}>
-                        {t("profile.appearanceSubtitle")}
+                        {getThemeName()}
                       </Text>
                     </VStack>
                     <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
-                    <Box
-                      className="ml-2 px-2 py-1 rounded"
-                      style={{ backgroundColor: theme.badgeWarning }}
-                    >
-                      <Text className="text-xs font-semibold" style={{ color: isDark ? "#fbbf24" : "#d97706" }}>
-                        Coming Soon
-                      </Text>
-                    </Box>
                   </HStack>
                 </TouchableOpacity>
               </Box>

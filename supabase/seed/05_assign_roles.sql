@@ -53,16 +53,23 @@ BEGIN
     RAISE WARNING 'Pastor role not found for church 1!';
   END IF;
   
-  -- Assign Member role to member@praise.test
+  -- Assign Member role to member@praise.test and all other members
   IF member_role_id_1 IS NOT NULL THEN
     INSERT INTO public.user_church_roles (user_id, church_role_id, assigned_by)
-    VALUES (
-      '00000000-0000-0000-0000-000000000003',
-      member_role_id_1,
-      '00000000-0000-0000-0000-000000000002'
-    )
+    VALUES 
+      ('00000000-0000-0000-0000-000000000003', member_role_id_1, '00000000-0000-0000-0000-000000000002'),
+      ('00000000-0000-0000-0000-000000000005', member_role_id_1, '00000000-0000-0000-0000-000000000002'),
+      ('00000000-0000-0000-0000-000000000006', member_role_id_1, '00000000-0000-0000-0000-000000000002'),
+      ('00000000-0000-0000-0000-000000000007', member_role_id_1, '00000000-0000-0000-0000-000000000002'),
+      ('00000000-0000-0000-0000-000000000008', member_role_id_1, '00000000-0000-0000-0000-000000000002'),
+      ('00000000-0000-0000-0000-000000000009', member_role_id_1, '00000000-0000-0000-0000-000000000002'),
+      ('00000000-0000-0000-0000-000000000010', member_role_id_1, '00000000-0000-0000-0000-000000000002'),
+      ('00000000-0000-0000-0000-000000000011', member_role_id_1, '00000000-0000-0000-0000-000000000002'),
+      ('00000000-0000-0000-0000-000000000012', member_role_id_1, '00000000-0000-0000-0000-000000000002'),
+      ('00000000-0000-0000-0000-000000000013', member_role_id_1, '00000000-0000-0000-0000-000000000002'),
+      ('00000000-0000-0000-0000-000000000014', member_role_id_1, '00000000-0000-0000-0000-000000000002')
     ON CONFLICT (user_id, church_role_id) DO NOTHING;
-    RAISE NOTICE 'Assigned Member role to member@praise.test';
+    RAISE NOTICE 'Assigned Member role to all church members';
   ELSE
     RAISE WARNING 'Member role not found for church 1!';
   END IF;

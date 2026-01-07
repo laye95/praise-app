@@ -1,27 +1,25 @@
-import { useState, useMemo } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { FlatList, TextInput, TouchableOpacity } from "react-native";
-import { useQuery } from "@tanstack/react-query";
 import { Box } from "@/components/ui/box";
-import { Button, ButtonText } from "@/components/ui/button";
-import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import { Ionicons } from "@expo/vector-icons";
+import { VStack } from "@/components/ui/vstack";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
-import { usePermissions } from "@/hooks/usePermissions";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { useAuth } from "@/contexts/AuthContext";
-import { useTeams } from "./_hooks/useTeams";
-import { useMembers } from "../members/_hooks/useMembers";
 import { teamMemberService } from "@/services/api/teamMemberService";
-import { queryKeys } from "@/services/queryKeys";
-import { TeamCard } from "./_components/TeamCard";
-import { CreateTeamModal } from "./_components/CreateTeamModal";
 import { TeamType } from "@/types/team";
-import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
+import { useMemo, useState } from "react";
+import { FlatList, TextInput, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useMembers } from "../members/_hooks/useMembers";
+import { CreateTeamModal } from "./_components/CreateTeamModal";
+import { TeamCard } from "./_components/TeamCard";
+import { useTeams } from "./_hooks/useTeams";
 
 const TEAM_TYPES: TeamType[] = [
   "worship",
@@ -41,7 +39,8 @@ export default function TeamsScreen() {
   const { user, session } = useAuth();
   const userId = user?.id || session?.user?.id;
   const { data: profile } = useUserProfile(userId);
-  const { can } = usePermissions();
+  const { can, hasRole } = usePermissions();
+  const isPastor = hasRole("Pastor");
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<TeamType | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -49,6 +48,15 @@ export default function TeamsScreen() {
   const { members } = useMembers();
 
   const canCreateTeam = can("teams:create");
+
+  const myTeamsQuery = useQuery({
+    queryKey: ["teams", "myTeams", userId || ""],
+    queryFn: () => teamMemberService.getMyTeams(),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const myTeamIds = myTeamsQuery.data || [];
 
   const memberCountsQuery = useQuery({
     queryKey: ["teams", "memberCounts", profile?.church_id || ""],
@@ -74,7 +82,9 @@ export default function TeamsScreen() {
   const memberCounts = memberCountsQuery.data || {};
 
   const filteredTeams = useMemo(() => {
-    let filtered = teams;
+    let filtered = isPastor
+      ? teams
+      : teams.filter((team) => myTeamIds.includes(team.id));
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -90,21 +100,25 @@ export default function TeamsScreen() {
     }
 
     return filtered;
-  }, [teams, searchQuery, typeFilter]);
+  }, [teams, myTeamIds, searchQuery, typeFilter, isPastor]);
 
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    teams.forEach((team) => {
+    const teamsToCount = isPastor
+      ? teams
+      : teams.filter((team) => myTeamIds.includes(team.id));
+    teamsToCount.forEach((team) => {
       counts[team.type] = (counts[team.type] || 0) + 1;
     });
     return counts;
-  }, [teams]);
+  }, [teams, myTeamIds, isPastor]);
 
   const handleCreateTeam = async (data: {
     name: string;
     description?: string;
     type: TeamType;
-    leader_ids: string[];
+    admin_ids: string[];
+    member_ids?: string[];
   }) => {
     await createTeamMutation.mutateAsync(data);
     setShowCreateModal(false);
@@ -115,14 +129,17 @@ export default function TeamsScreen() {
       <VStack className="flex-1">
         <Box className="px-6 pb-4 pt-6">
           <HStack className="items-center justify-between">
-            <VStack className="gap-2 flex-1">
+            <VStack className="flex-1 gap-2">
               <Text
                 className="text-3xl font-bold"
                 style={{ color: theme.textPrimary }}
               >
                 {t("teams.title")}
               </Text>
-              <Text className="text-base" style={{ color: theme.textSecondary }}>
+              <Text
+                className="text-base"
+                style={{ color: theme.textSecondary }}
+              >
                 {t("teams.subtitle")}
               </Text>
             </VStack>
@@ -174,10 +191,12 @@ export default function TeamsScreen() {
                 <Text
                   className="text-xs font-semibold"
                   style={{
-                    color: typeFilter === null ? "#ffffff" : theme.tabInactiveText,
+                    color:
+                      typeFilter === null ? "#ffffff" : theme.tabInactiveText,
                   }}
                 >
-                  {t("teams.all")} ({teams.length})
+                  {t("teams.all")} (
+                  {teams.filter((team) => myTeamIds.includes(team.id)).length})
                 </Text>
               </TouchableOpacity>
               {TEAM_TYPES.map((type) => {
@@ -200,14 +219,18 @@ export default function TeamsScreen() {
                           : theme.tabInactiveBg,
                       borderWidth: 1,
                       borderColor:
-                        typeFilter === type ? theme.tabActive : theme.cardBorder,
+                        typeFilter === type
+                          ? theme.tabActive
+                          : theme.cardBorder,
                     }}
                   >
                     <Text
                       className="text-xs font-semibold"
                       style={{
                         color:
-                          typeFilter === type ? "#ffffff" : theme.tabInactiveText,
+                          typeFilter === type
+                            ? "#ffffff"
+                            : theme.tabInactiveText,
                       }}
                     >
                       {t(`teams.types.${type}`)} ({count})
@@ -264,9 +287,12 @@ export default function TeamsScreen() {
         </Box>
 
         <Box className="flex-1 px-6">
-          {isLoading ? (
+          {isLoading || myTeamsQuery.isLoading ? (
             <Box className="items-center justify-center py-20">
-              <Text className="text-base" style={{ color: theme.textSecondary }}>
+              <Text
+                className="text-base"
+                style={{ color: theme.textSecondary }}
+              >
                 {t("teams.loadingTeams")}
               </Text>
             </Box>

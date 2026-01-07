@@ -9,6 +9,7 @@ import { Church } from "@/types/church";
 import { MembershipRequestWithChurch } from "@/types/membership";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface ChurchCardProps {
   church: Church;
@@ -42,7 +43,8 @@ export function ChurchCard({
     }
   };
 
-  const isDark = theme.pageBg === "#0f172a";
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <Box
@@ -70,7 +72,7 @@ export function ChurchCard({
               justifyContent: "center",
             }}
           >
-            <Ionicons name="business" size={20} color={theme.buttonPrimary} />
+            <Ionicons name="business" size={20} color={isDark ? "#ffffff" : theme.buttonPrimary} />
           </Box>
           <VStack className="flex-1 gap-0.5">
             <Text className="text-base font-semibold" style={{ color: theme.textPrimary }}>

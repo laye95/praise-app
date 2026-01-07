@@ -12,6 +12,7 @@ import { ChurchCard } from "./_components/ChurchCard";
 import { ApplicationModal } from "./_components/ApplicationModal";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Church } from "@/types/church";
 import * as Haptics from "expo-haptics";
 
@@ -19,7 +20,8 @@ export default function FindChurchScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const isDark = theme.pageBg === "#0f172a";
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [searchQuery, setSearchQuery] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedChurch, setSelectedChurch] = useState<Church | null>(null);
@@ -121,7 +123,7 @@ export default function FindChurchScreen() {
                       className="rounded-full p-1.5"
                       style={{ backgroundColor: theme.badgeInfo }}
                     >
-                      <Ionicons name="time" size={14} color="#ffffff" />
+                      <Ionicons name="time" size={14} color={isDark ? "#ffffff" : "#2563eb"} />
                     </Box>
                     <VStack className="flex-1">
                       <Text className="text-xs" style={{ color: theme.textSecondary }}>
@@ -240,7 +242,7 @@ export default function FindChurchScreen() {
                     className="rounded-full p-2"
                     style={{ backgroundColor: theme.badgeInfo }}
                   >
-                    <Ionicons name="time" size={18} color="#ffffff" />
+                    <Ionicons name="time" size={18} color={isDark ? "#ffffff" : "#2563eb"} />
                   </Box>
                   <VStack className="flex-1 gap-1">
                     <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>

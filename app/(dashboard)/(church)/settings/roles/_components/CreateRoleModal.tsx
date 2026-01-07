@@ -18,7 +18,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface CreateRoleModalProps {
   visible: boolean;
@@ -41,6 +41,7 @@ export function CreateRoleModal({
 }: CreateRoleModalProps) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const isDark = theme.pageBg === "#0f172a";
   const slideAnim = useRef(new Animated.Value(500)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -185,17 +186,15 @@ export function CreateRoleModal({
             maxHeight: "85%",
           }}
         >
-          <SafeAreaView edges={["bottom"]}>
-            <Box
-              className="rounded-t-3xl"
-              style={{
-                backgroundColor: theme.cardBg,
-                borderTopWidth: 1,
-                borderTopColor: theme.cardBorder,
-                paddingTop: 8,
-                paddingBottom: 32,
-              }}
-            >
+          <Box
+            className="rounded-t-3xl"
+            style={{
+              backgroundColor: theme.cardBg,
+              borderTopWidth: 1,
+              borderTopColor: theme.cardBorder,
+              paddingTop: 8,
+            }}
+          >
               <VStack className="mb-4">
                 <Box className="mb-3 items-center">
                   <Box
@@ -491,7 +490,10 @@ export function CreateRoleModal({
                 </VStack>
               </ScrollView>
 
-              <VStack className="mt-4 gap-2 px-6">
+              <VStack
+                className="mt-4 gap-2 px-6"
+                style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+              >
                 <Button
                   onPress={handleCreate}
                   action="primary"
@@ -538,7 +540,6 @@ export function CreateRoleModal({
                 </TouchableOpacity>
               </VStack>
             </Box>
-          </SafeAreaView>
         </Animated.View>
       </Animated.View>
     </Modal>

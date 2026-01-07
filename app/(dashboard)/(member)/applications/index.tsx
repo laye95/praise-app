@@ -6,6 +6,7 @@ import { VStack } from "@/components/ui/vstack";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { MembershipRequestWithChurch } from "@/types/membership";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -20,7 +21,8 @@ export default function ApplicationsScreen() {
   const { user } = useAuth();
   const theme = useTheme();
   const { t } = useTranslation();
-  const isDark = theme.pageBg === "#0f172a";
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const {
     myRequests,
@@ -63,7 +65,7 @@ export default function ApplicationsScreen() {
     const configs = {
       pending: {
         bgColor: theme.badgeInfo,
-        iconColor: "#ffffff",
+        iconColor: isDark ? "#ffffff" : "#2563eb",
         icon: "time",
         borderColor: theme.buttonPrimary,
       },
@@ -126,7 +128,7 @@ export default function ApplicationsScreen() {
                 <Ionicons
                   name="business"
                   size={24}
-                  color={theme.buttonPrimary}
+                  color={isDark ? "#ffffff" : theme.buttonPrimary}
                 />
               </Box>
               <VStack className="flex-1 gap-0.5">

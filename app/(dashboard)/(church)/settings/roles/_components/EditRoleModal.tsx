@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Modal, TouchableOpacity, Animated, ActivityIndicator, TextInput, Keyboard, ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -35,6 +35,7 @@ export function EditRoleModal({
 }: EditRoleModalProps) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const isDark = theme.pageBg === "#0f172a";
   const slideAnim = useRef(new Animated.Value(500)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -199,17 +200,15 @@ export function EditRoleModal({
             maxHeight: "85%",
           }}
         >
-          <SafeAreaView edges={["bottom"]}>
-            <Box
-              className="rounded-t-3xl"
-              style={{
-                backgroundColor: theme.cardBg,
-                borderTopWidth: 1,
-                borderTopColor: theme.cardBorder,
-                paddingTop: 8,
-                paddingBottom: 32,
-              }}
-            >
+          <Box
+            className="rounded-t-3xl"
+            style={{
+              backgroundColor: theme.cardBg,
+              borderTopWidth: 1,
+              borderTopColor: theme.cardBorder,
+              paddingTop: 8,
+            }}
+          >
               <VStack className="mb-4">
                 <HStack className="items-center justify-between px-6 mb-3">
                   <Box className="items-center flex-1">
@@ -527,7 +526,10 @@ export function EditRoleModal({
                 </VStack>
               </ScrollView>
 
-              <VStack className="mt-4 gap-2 px-6">
+              <VStack
+                className="mt-4 gap-2 px-6"
+                style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+              >
                 <Button
                   onPress={handleSave}
                   action="primary"
@@ -574,7 +576,6 @@ export function EditRoleModal({
                 </TouchableOpacity>
               </VStack>
             </Box>
-          </SafeAreaView>
         </Animated.View>
       </Animated.View>
     </Modal>

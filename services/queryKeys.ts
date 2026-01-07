@@ -36,4 +36,24 @@ export const queryKeys = {
     byChurch: (churchId: string) => ["roles", "church", churchId] as const,
     detail: (id: string) => ["roles", id] as const,
   },
+  teamCalendar: {
+    events: (teamId: string) => ["teamCalendar", "events", teamId] as const,
+    event: (eventId: string) => ["teamCalendar", "event", eventId] as const,
+    byDateRange: (teamId: string, start: string, end: string) =>
+      ["teamCalendar", "events", teamId, start, end] as const,
+    search: (teamId: string, query: string) =>
+      ["teamCalendar", "search", teamId, query] as const,
+  },
+  teamDocuments: {
+    all: (teamId: string) => ["teamDocuments", teamId] as const,
+    byEvent: (teamId: string, eventId: string) =>
+      ["teamDocuments", teamId, eventId] as const,
+  },
+  teamGroups: {
+    all: (teamId: string) => ["teamGroups", teamId] as const,
+    detail: (groupId: string) => ["teamGroups", "detail", groupId] as const,
+    members: (groupId: string) => ["teamGroups", "members", groupId] as const,
+    userGroup: (teamId: string, userId: string) =>
+      ["teamGroups", "userGroup", teamId, userId] as const,
+  },
 } as const;
