@@ -1,6 +1,8 @@
 import { Tabs, Redirect } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { TabNavDirectionProvider } from "@/contexts/TabNavDirectionContext";
+import { useTheme } from "@/hooks/useTheme";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { CustomTabBar } from "./_components/CustomTabBar";
 
@@ -24,13 +26,17 @@ export default function ChurchLayout() {
     return <Redirect href="/(dashboard)/(member)/find-church" />;
   }
 
+  const theme = useTheme();
+
   return (
-    <Tabs
-      tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
+    <TabNavDirectionProvider>
+      <Tabs
+        tabBar={(props) => <CustomTabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+          sceneStyle: { backgroundColor: theme.pageBg },
+        }}
+      >
       <Tabs.Screen
         name="home/index"
         options={{
@@ -56,5 +62,6 @@ export default function ChurchLayout() {
         }}
       />
     </Tabs>
+    </TabNavDirectionProvider>
   );
 }

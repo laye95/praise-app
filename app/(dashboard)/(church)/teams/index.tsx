@@ -1,3 +1,4 @@
+import { AnimatedTabScreen } from "@/components/ui/AnimatedTabScreen";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -125,8 +126,9 @@ export default function TeamsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: theme.pageBg }}>
-      <VStack className="flex-1">
+    <AnimatedTabScreen>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: theme.pageBg }}>
+        <VStack className="flex-1">
         <Box className="px-6 pb-4 pt-6">
           <HStack className="items-center justify-between">
             <VStack className="flex-1 gap-2">
@@ -355,13 +357,14 @@ export default function TeamsScreen() {
         </Box>
       </VStack>
 
-      <CreateTeamModal
-        visible={showCreateModal}
-        members={members}
-        onClose={() => setShowCreateModal(false)}
-        onCreate={handleCreateTeam}
-        isCreating={createTeamMutation.isPending}
-      />
-    </SafeAreaView>
+        <CreateTeamModal
+          visible={showCreateModal}
+          members={members}
+          onClose={() => setShowCreateModal(false)}
+          onCreate={handleCreateTeam}
+          isCreating={createTeamMutation.isPending}
+        />
+      </SafeAreaView>
+    </AnimatedTabScreen>
   );
 }

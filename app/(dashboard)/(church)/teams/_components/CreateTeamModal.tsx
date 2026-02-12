@@ -1,17 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { Keyboard, ScrollView, TouchableOpacity } from "react-native";
 import {
-  ActivityIndicator,
-  Animated,
-  Keyboard,
-  Modal,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+  BottomSheetDrawerTextInput,
+} from "@/components/ui/BottomSheetDrawer";
+import { DrawerWithLayout } from "@/components/ui/DrawerWithLayout";
 import { Box } from "@/components/ui/box";
-import { Button, ButtonText } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
@@ -93,67 +86,35 @@ export function CreateTeamModal({
 }: CreateTeamModalProps) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const isDark = theme.pageBg === "#0f172a";
-  const slideAnim = useRef(new Animated.Value(500)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedType, setSelectedType] = useState<TeamType>("worship");
-  const [selectedAdminIds, setSelectedAdminIds] = useState<Set<string>>(
-    new Set(),
-  );
-  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(
-    new Set(),
-  );
+  const [selectedAdminIds, setSelectedAdminIds] = useState<Set<string>>(new Set());
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
-  const nameInputRef = useRef<TextInput>(null);
-  const descriptionInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    if (visible) {
-      slideAnim.setValue(500);
-      fadeAnim.setValue(0);
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          tension: 65,
-          friction: 11,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      slideAnim.setValue(500);
-      fadeAnim.setValue(0);
-    }
-  }, [visible, slideAnim, fadeAnim]);
-
-  const handleClose = () => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 500,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
+    if (!visible) {
       setName("");
       setDescription("");
       setSelectedType("worship");
-      setSelectedLeaderIds(new Set());
+      setSelectedAdminIds(new Set());
       setSelectedMemberIds(new Set());
       setSearchQuery("");
-      onClose();
-    });
+      Keyboard.dismiss();
+    }
+  }, [visible]);
+
+  const handleClose = () => {
+    Keyboard.dismiss();
+    setName("");
+    setDescription("");
+    setSelectedType("worship");
+    setSelectedAdminIds(new Set());
+    setSelectedMemberIds(new Set());
+    setSearchQuery("");
+    onClose();
   };
 
   const handleToggleAdmin = (userId: string) => {
@@ -210,7 +171,7 @@ export function CreateTeamModal({
     (selectedAdminIds.size > 0 || selectedMemberIds.size > 0) &&
     !isCreating;
 
-  const filteredMembers = members.filter((member) => {
+  const filteredMembers = members.filter((member: User) => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -233,109 +194,15 @@ export function CreateTeamModal({
     return "??";
   };
 
-  if (!visible) {
-    return null;
-  }
-
   return (
-    <Modal
+    <DrawerWithLayout
       visible={visible}
-      transparent={true}
-      animationType="none"
-      onRequestClose={handleClose}
-    >
-      <Animated.View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
-          opacity: fadeAnim,
-        }}
-      >
-        <TouchableOpacity
-          activeOpacity={1}
-          style={{ flex: 1 }}
-          onPress={handleClose}
-        />
-        <Animated.View
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            transform: [{ translateY: slideAnim }],
-            maxHeight: "95%",
-          }}
-        >
-          <Box
-            className="rounded-t-3xl"
-            style={{
-              backgroundColor: theme.cardBg,
-              borderTopWidth: 1,
-              borderTopColor: theme.cardBorder,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: -4 },
-                shadowOpacity: isDark ? 0.3 : 0.1,
-                shadowRadius: 12,
-                elevation: 8,
-              }}
-            >
-              <VStack className="gap-0">
-                <Box className="items-center pt-4 pb-2">
-                  <Box
-                    style={{
-                      width: 40,
-                      height: 4,
-                      borderRadius: 2,
-                      backgroundColor: theme.textTertiary,
-                      opacity: 0.5,
-                    }}
-                  />
-                </Box>
-
-                <Box className="px-6 pt-4 pb-6">
-                  <HStack className="items-center justify-between mb-1">
-                    <Text
-                      className="text-2xl font-bold"
-                      style={{ color: theme.textPrimary }}
-                    >
-                      {t("teams.createTeam")}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={handleClose}
-                      activeOpacity={0.7}
-                      disabled={isCreating}
-                      className="cursor-pointer"
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 16,
-                        backgroundColor: isDark ? "#1e293b" : "#f1f5f9",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Ionicons
-                        name="close"
-                        size={20}
-                        color={theme.textSecondary}
-                      />
-                    </TouchableOpacity>
-                  </HStack>
-                  <Text
-                    className="text-sm mt-1"
-                    style={{ color: theme.textSecondary }}
-                  >
-                    {t("teams.createTeamDescription")}
-                  </Text>
-                </Box>
-
-                <ScrollView
-                  showsVerticalScrollIndicator={false}
-                  className="px-6"
-                  style={{ maxHeight: 500 }}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  <VStack className="gap-6 pb-2">
+      onClose={handleClose}
+      title={t("teams.createTeam")}
+      subtitle={t("teams.createTeamDescription")}
+      snapPoints={["85%"]}
+      content={
+        <VStack className="gap-6 pb-2 px-6">
                     <VStack className="gap-3">
                       <Text
                         className="text-sm font-semibold"
@@ -356,8 +223,7 @@ export function CreateTeamModal({
                           elevation: 1,
                         }}
                       >
-                        <TextInput
-                          ref={nameInputRef}
+                        <BottomSheetDrawerTextInput
                           placeholder={t("teams.teamNamePlaceholder")}
                           placeholderTextColor={theme.textTertiary}
                           value={name}
@@ -365,9 +231,6 @@ export function CreateTeamModal({
                           autoCapitalize="words"
                           returnKeyType="next"
                           editable={!isCreating}
-                          onSubmitEditing={() =>
-                            descriptionInputRef.current?.focus()
-                          }
                           style={{
                             color: theme.textPrimary,
                             fontSize: 16,
@@ -492,8 +355,7 @@ export function CreateTeamModal({
                           elevation: 1,
                         }}
                       >
-                        <TextInput
-                          ref={descriptionInputRef}
+                        <BottomSheetDrawerTextInput
                           placeholder={t("teams.descriptionPlaceholder")}
                           placeholderTextColor={theme.textTertiary}
                           value={description}
@@ -550,7 +412,7 @@ export function CreateTeamModal({
                             size={20}
                             color={theme.textTertiary}
                           />
-                          <TextInput
+                          <BottomSheetDrawerTextInput
                             placeholder={t("teams.searchMembers")}
                             placeholderTextColor={theme.textTertiary}
                             value={searchQuery}
@@ -739,76 +601,19 @@ export function CreateTeamModal({
                         </Box>
                       </Box>
                     </VStack>
-                  </VStack>
-                </ScrollView>
-
-                <Box
-                  className="px-6 pt-5 border-t"
-                  style={{
-                    borderTopWidth: 1,
-                    borderTopColor: theme.cardBorder,
-                    backgroundColor: theme.cardBg,
-                    minHeight: 140,
-                    paddingBottom: Math.max(insets.bottom, 16),
-                  }}
-                >
-                  <VStack className="gap-3">
-                    <Button
-                      onPress={handleCreate}
-                      disabled={!canCreate}
-                      action="primary"
-                      variant="solid"
-                      size="lg"
-                      className="h-14 cursor-pointer rounded-2xl"
-                      style={{
-                        backgroundColor: canCreate
-                          ? theme.buttonPrimary
-                          : theme.textTertiary,
-                        shadowColor: canCreate ? theme.buttonPrimary : "transparent",
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: canCreate ? 0.3 : 0,
-                        shadowRadius: 8,
-                        elevation: canCreate ? 4 : 0,
-                      }}
-                    >
-                      {isCreating ? (
-                        <HStack className="items-center gap-2">
-                          <ActivityIndicator size="small" color="#ffffff" />
-                          <ButtonText
-                            className="text-base font-semibold"
-                            style={{ color: "#ffffff" }}
-                          >
-                            {t("teams.creating")}
-                          </ButtonText>
-                        </HStack>
-                      ) : (
-                        <ButtonText
-                          className="text-base font-semibold"
-                          style={{ color: "#ffffff" }}
-                        >
-                          {t("teams.createTeam")}
-                        </ButtonText>
-                      )}
-                    </Button>
-                    <TouchableOpacity
-                      onPress={handleClose}
-                      disabled={isCreating}
-                      activeOpacity={0.7}
-                      className="cursor-pointer"
-                    >
-                      <Text
-                        className="text-center text-base font-semibold py-3"
-                        style={{ color: theme.textSecondary }}
-                      >
-                        {t("common.cancel")}
-                      </Text>
-                    </TouchableOpacity>
-                  </VStack>
-                </Box>
-              </VStack>
-            </Box>
-        </Animated.View>
-      </Animated.View>
-    </Modal>
+        </VStack>
+      }
+      saveButton={{
+        label: t("teams.createTeam"),
+        onPress: handleCreate,
+        disabled: !canCreate,
+        loading: isCreating,
+      }}
+      cancelButton={{
+        label: t("common.cancel"),
+        onPress: handleClose,
+        disabled: isCreating,
+      }}
+    />
   );
 }

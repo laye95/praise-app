@@ -1,6 +1,7 @@
 import { Text } from "@/components/ui/text";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useTabNavDirection } from "@/contexts/TabNavDirectionContext";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
@@ -17,6 +18,7 @@ export function CustomTabBar({
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { t } = useTranslation();
+  const { setDirection } = useTabNavDirection();
   const isDark = theme.pageBg === "#0f172a";
   const previousIndex = useRef(state.index);
   const scaleAnims = useRef<Record<string, Animated.Value>>({}).current;
@@ -130,6 +132,11 @@ export function CustomTabBar({
             });
 
             if (!isFocused && !event.defaultPrevented) {
+              const currentRouteName = state.routes[state.index]?.name?.split("/")[0];
+              const targetRouteName = route.name.split("/")[0];
+              const fromOrder = tabConfig[currentRouteName]?.order ?? 999;
+              const toOrder = tabConfig[targetRouteName]?.order ?? 999;
+              setDirection(toOrder > fromOrder ? "forward" : "back");
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               navigation.navigate(route.name as never);
             }

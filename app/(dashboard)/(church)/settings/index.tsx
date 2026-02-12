@@ -1,5 +1,6 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScrollView, TouchableOpacity } from "react-native";
+import { AnimatedTabScreen } from "@/components/ui/AnimatedTabScreen";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -29,8 +30,9 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: theme.pageBg }}>
-      <ScrollView className="flex-1">
+    <AnimatedTabScreen>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: theme.pageBg }}>
+        <ScrollView className="flex-1">
         <Box className="px-6 py-4">
           <VStack className="gap-6">
             <VStack className="gap-2">
@@ -179,7 +181,8 @@ export default function SettingsScreen() {
             </VStack>
           </VStack>
         </Box>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </AnimatedTabScreen>
   );
 }

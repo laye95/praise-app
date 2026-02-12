@@ -1,14 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
-  FlatList,
   Keyboard,
-  Modal,
-  TextInput,
   TouchableOpacity,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
 import { HStack } from "@/components/ui/hstack";
@@ -21,6 +16,10 @@ import { User } from "@/types/user";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { TeamMemberRow } from "./TeamMemberRow";
+import {
+  BottomSheetDrawerTextInput,
+} from "@/components/ui/BottomSheetDrawer";
+import { DrawerWithLayout } from "@/components/ui/DrawerWithLayout";
 
 interface ManageTeamMembersModalProps {
   visible: boolean;
@@ -53,61 +52,26 @@ export function ManageTeamMembersModal({
 }: ManageTeamMembersModalProps) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const isDark = theme.pageBg === "#0f172a";
-  const slideAnim = useRef(new Animated.Value(500)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddMember, setShowAddMember] = useState(false);
 
   useEffect(() => {
-    if (visible) {
-      slideAnim.setValue(500);
-      fadeAnim.setValue(0);
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          tension: 65,
-          friction: 11,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      slideAnim.setValue(500);
-      fadeAnim.setValue(0);
+    if (!visible) {
       setSearchQuery("");
       setShowAddMember(false);
     }
-  }, [visible, slideAnim, fadeAnim]);
+  }, [visible]);
 
   const handleClose = () => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 500,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setSearchQuery("");
-      setShowAddMember(false);
-      onClose();
-    });
+    Keyboard.dismiss();
+    setSearchQuery("");
+    setShowAddMember(false);
+    onClose();
   };
 
   const memberIds = new Set(members.map((m) => m.user_id));
-  const availableMembers = allMembers.filter(
-    (member) => !memberIds.has(member.id),
-  );
+  const availableMembers = allMembers.filter((member) => !memberIds.has(member.id));
 
   const filteredAvailableMembers = availableMembers.filter((member) => {
     if (!searchQuery.trim()) return true;
@@ -133,289 +97,181 @@ export function ManageTeamMembersModal({
     setSearchQuery("");
   };
 
-  if (!visible) {
-    return null;
-  }
-
   return (
-    <Modal
+    <DrawerWithLayout
       visible={visible}
-      transparent={true}
-      animationType="none"
-      onRequestClose={handleClose}
-    >
-      <Animated.View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
-          opacity: fadeAnim,
-        }}
-      >
-        <TouchableOpacity
-          activeOpacity={1}
-          style={{ flex: 1 }}
-          onPress={handleClose}
-        />
-        <Animated.View
+      onClose={handleClose}
+      title={t("teams.manageMembers")}
+      subtitle={teamName}
+      snapPoints={["75%"]}
+      content={
+        <VStack className="gap-4 px-6">
+          <VStack>
+        <Box
+          className="rounded-xl"
           style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            transform: [{ translateY: slideAnim }],
-            maxHeight: "98%",
+            backgroundColor: isDark ? "#1e293b" : "#ffffff",
+            borderWidth: 1,
+            borderColor: isDark ? "#334155" : "#e2e8f0",
           }}
         >
-          <Box
-            className="rounded-t-3xl"
-            style={{
-              backgroundColor: theme.cardBg,
-              borderTopWidth: 1,
-              borderTopColor: theme.cardBorder,
-              paddingTop: 8,
+          <HStack className="items-center gap-3 px-4 py-3">
+            <Ionicons name="search" size={20} color={theme.textTertiary} />
+            <BottomSheetDrawerTextInput
+              placeholder={t("teams.searchMembers")}
+              placeholderTextColor={theme.textTertiary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              style={{
+                flex: 1,
+                fontSize: 15,
+                color: theme.textPrimary,
+              }}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery("")}
+                activeOpacity={0.7}
+                className="cursor-pointer"
+              >
+                <Ionicons name="close-circle" size={20} color={theme.textTertiary} />
+              </TouchableOpacity>
+            )}
+          </HStack>
+        </Box>
+      </VStack>
+
+      {canManage && !showAddMember && (
+        <Box>
+          <Button
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowAddMember(true);
             }}
+            action="primary"
+            variant="solid"
+            size="lg"
+            className="h-12 cursor-pointer rounded-xl"
+            disabled={isAdding}
+            style={{ backgroundColor: theme.buttonPrimary }}
           >
-              <VStack className="mb-4">
-                <Box className="mb-3 items-center px-6">
-                  <Box
-                    style={{
-                      width: 40,
-                      height: 4,
-                      borderRadius: 2,
-                      backgroundColor: theme.textTertiary,
-                      marginBottom: 16,
-                    }}
-                  />
-                  <Text
-                    className="mb-1 text-lg font-bold"
-                    style={{ color: theme.textPrimary }}
-                  >
-                    {t("teams.manageMembers")}
-                  </Text>
-                  <Text
-                    className="text-sm"
-                    style={{ color: theme.textSecondary }}
-                  >
-                    {teamName}
+            <HStack className="items-center gap-2">
+              <Ionicons name="add-circle-outline" size={20} color="#ffffff" />
+              <ButtonText className="text-base font-semibold" style={{ color: "#ffffff" }}>
+                {t("teams.addMember")}
+              </ButtonText>
+            </HStack>
+          </Button>
+        </Box>
+      )}
+
+      {showAddMember && (
+        <Box>
+          <VStack className="gap-2">
+            <Text
+              className="text-sm font-semibold"
+              style={{ color: theme.textPrimary }}
+            >
+              {t("teams.selectMemberToAdd")}
+            </Text>
+            <Box
+              className="rounded-xl"
+              style={{
+                backgroundColor: isDark ? "#1e293b" : "#ffffff",
+                borderWidth: 1,
+                borderColor: isDark ? "#334155" : "#e2e8f0",
+                maxHeight: 300,
+              }}
+            >
+              {filteredAvailableMembers.length === 0 ? (
+                <Box className="items-center justify-center py-8">
+                  <Text className="text-sm" style={{ color: theme.textSecondary }}>
+                    {t("teams.noMembersAvailable")}
                   </Text>
                 </Box>
-              </VStack>
-
-              <VStack className="px-6 mb-4">
-                <Box
-                  className="rounded-xl"
-                  style={{
-                    backgroundColor: isDark ? "#1e293b" : "#ffffff",
-                    borderWidth: 1,
-                    borderColor: isDark ? "#334155" : "#e2e8f0",
-                  }}
-                >
-                  <HStack className="items-center gap-3 px-4 py-3">
-                    <Ionicons
-                      name="search"
-                      size={20}
-                      color={theme.textTertiary}
-                    />
-                    <TextInput
-                      placeholder={t("teams.searchMembers")}
-                      placeholderTextColor={theme.textTertiary}
-                      value={searchQuery}
-                      onChangeText={setSearchQuery}
-                      style={{
-                        flex: 1,
-                        fontSize: 15,
-                        color: theme.textPrimary,
-                      }}
-                    />
-                    {searchQuery.length > 0 && (
-                      <TouchableOpacity
-                        onPress={() => setSearchQuery("")}
-                        activeOpacity={0.7}
-                        className="cursor-pointer"
-                      >
-                        <Ionicons
-                          name="close-circle"
-                          size={20}
-                          color={theme.textTertiary}
-                        />
-                      </TouchableOpacity>
-                    )}
-                  </HStack>
-                </Box>
-              </VStack>
-
-              {canManage && !showAddMember && (
-                <Box className="px-6 mb-4">
-                  <Button
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setShowAddMember(true);
-                    }}
-                    action="primary"
-                    variant="solid"
-                    size="lg"
-                    className="h-12 cursor-pointer rounded-xl"
+              ) : (
+                filteredAvailableMembers.map((item: User) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    activeOpacity={0.7}
+                    onPress={() => handleAddMember(item.id)}
                     disabled={isAdding}
                     style={{
-                      backgroundColor: theme.buttonPrimary,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderBottomWidth: 1,
+                      borderBottomColor: theme.cardBorder,
                     }}
                   >
-                    <HStack className="items-center gap-2">
-                      <Ionicons name="add-circle-outline" size={20} color="#ffffff" />
-                      <ButtonText
-                        className="text-base font-semibold"
-                        style={{ color: "#ffffff" }}
-                      >
-                        {t("teams.addMember")}
-                      </ButtonText>
-                    </HStack>
-                  </Button>
-                </Box>
-              )}
-
-              {showAddMember && (
-                <Box className="px-6 mb-4">
-                  <VStack className="gap-2">
-                    <Text
-                      className="text-sm font-semibold"
-                      style={{ color: theme.textPrimary }}
-                    >
-                      {t("teams.selectMemberToAdd")}
-                    </Text>
-                    <Box
-                      className="rounded-xl"
-                      style={{
-                        backgroundColor: isDark ? "#1e293b" : "#ffffff",
-                        borderWidth: 1,
-                        borderColor: isDark ? "#334155" : "#e2e8f0",
-                        maxHeight: 300,
-                      }}
-                    >
-                      {filteredAvailableMembers.length === 0 ? (
-                        <Box className="items-center justify-center py-8">
+                    <HStack className="items-center justify-between">
+                      <VStack className="flex-1 gap-0.5">
+                        <Text
+                          className="text-base font-semibold"
+                          style={{ color: theme.textPrimary }}
+                        >
+                          {item.full_name || item.email.split("@")[0]}
+                        </Text>
+                        {item.full_name && (
                           <Text
                             className="text-sm"
                             style={{ color: theme.textSecondary }}
                           >
-                            {t("teams.noMembersAvailable")}
+                            {item.email}
                           </Text>
-                        </Box>
-                      ) : (
-                        <FlatList
-                          data={filteredAvailableMembers}
-                          keyExtractor={(item) => item.id}
-                          renderItem={({ item }) => (
-                            <TouchableOpacity
-                              activeOpacity={0.7}
-                              onPress={() => handleAddMember(item.id)}
-                              disabled={isAdding}
-                              style={{
-                                paddingHorizontal: 16,
-                                paddingVertical: 12,
-                                borderBottomWidth: 1,
-                                borderBottomColor: theme.cardBorder,
-                              }}
-                            >
-                              <HStack className="items-center justify-between">
-                                <VStack className="flex-1 gap-0.5">
-                                  <Text
-                                    className="text-base font-semibold"
-                                    style={{ color: theme.textPrimary }}
-                                  >
-                                    {item.full_name || item.email.split("@")[0]}
-                                  </Text>
-                                  {item.full_name && (
-                                    <Text
-                                      className="text-sm"
-                                      style={{ color: theme.textSecondary }}
-                                    >
-                                      {item.email}
-                                    </Text>
-                                  )}
-                                </VStack>
-                                {isAdding && (
-                                  <ActivityIndicator size="small" color={theme.buttonPrimary} />
-                                )}
-                              </HStack>
-                            </TouchableOpacity>
-                          )}
-                          nestedScrollEnabled={true}
-                        />
+                        )}
+                      </VStack>
+                      {isAdding && (
+                        <ActivityIndicator size="small" color={theme.buttonPrimary} />
                       )}
-                    </Box>
-                    <Button
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setShowAddMember(false);
-                        setSearchQuery("");
-                      }}
-                      action="secondary"
-                      variant="outline"
-                      size="sm"
-                      className="h-10 cursor-pointer rounded-xl"
-                      disabled={isAdding}
-                    >
-                      <ButtonText
-                        className="text-sm font-semibold"
-                        style={{ color: theme.textPrimary }}
-                      >
-                        {t("common.cancel")}
-                      </ButtonText>
-                    </Button>
-                  </VStack>
-                </Box>
+                    </HStack>
+                  </TouchableOpacity>
+                ))
               )}
-
-              <Box className="flex-1 px-6" style={{ maxHeight: 450 }}>
-                <FlatList
-                  data={filteredMembers}
-                  keyExtractor={(item) => item.id}
-                  renderItem={({ item }) => (
-                    <TeamMemberRow
-                      member={item}
-                      currentUserId={currentUserId}
-                      canManage={canManage}
-                      onRemove={onRemoveMember}
-                      isRemoving={isRemoving}
-                    />
-                  )}
-                  ListEmptyComponent={
-                    <Box className="items-center justify-center py-8">
-                      <Text
-                        className="text-sm"
-                        style={{ color: theme.textSecondary }}
-                      >
-                        {t("teams.noMembersInTeam")}
-                      </Text>
-                    </Box>
-                  }
-                  showsVerticalScrollIndicator={true}
-                  nestedScrollEnabled={true}
-                />
-              </Box>
-
-              <Box
-                className="px-6 mt-4"
-                style={{ paddingBottom: Math.max(insets.bottom, 16) }}
-              >
-                <Button
-                  onPress={handleClose}
-                  action="secondary"
-                  variant="outline"
-                  size="lg"
-                  className="h-12 cursor-pointer rounded-xl"
-                >
-                  <ButtonText
-                    className="text-base font-semibold"
-                    style={{ color: theme.textPrimary }}
-                  >
-                    {t("common.close")}
-                  </ButtonText>
-                </Button>
-              </Box>
             </Box>
-        </Animated.View>
-      </Animated.View>
-    </Modal>
+            <Button
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowAddMember(false);
+                setSearchQuery("");
+              }}
+              action="secondary"
+              variant="outline"
+              size="sm"
+              className="h-10 cursor-pointer rounded-xl"
+              disabled={isAdding}
+            >
+              <ButtonText className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
+                {t("common.cancel")}
+              </ButtonText>
+            </Button>
+          </VStack>
+        </Box>
+      )}
+
+      {filteredMembers.length === 0 ? (
+        <Box className="items-center justify-center py-8">
+          <Text className="text-sm" style={{ color: theme.textSecondary }}>
+            {t("teams.noMembersInTeam")}
+          </Text>
+        </Box>
+      ) : (
+        filteredMembers.map((item) => (
+          <TeamMemberRow
+            key={item.id}
+            member={item}
+            currentUserId={currentUserId}
+            canManage={canManage}
+            onRemove={onRemoveMember}
+            isRemoving={isRemoving}
+          />
+        ))
+      )}
+        </VStack>
+      }
+      cancelButton={{
+        label: t("common.close"),
+        onPress: handleClose,
+      }}
+    />
   );
 }

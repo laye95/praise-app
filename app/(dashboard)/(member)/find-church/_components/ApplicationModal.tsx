@@ -1,24 +1,16 @@
 import { Box } from "@/components/ui/box";
-import { Button, ButtonText } from "@/components/ui/button";
-import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Church } from "@/types/church";
-import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { Keyboard } from "react-native";
 import {
-  Animated,
-  Keyboard,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  TextInput,
-  TouchableOpacity,
-} from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+  BottomSheetDrawerTextInput,
+} from "@/components/ui/BottomSheetDrawer";
+import { DrawerWithLayout } from "@/components/ui/DrawerWithLayout";
 
 interface ApplicationModalProps {
   visible: boolean;
@@ -37,65 +29,14 @@ export function ApplicationModal({
 }: ApplicationModalProps) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
-  const isDark = theme.pageBg === "#0f172a";
   const [message, setMessage] = useState("");
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const textInputRef = useRef<TextInput>(null);
-  const slideAnim = useRef(new Animated.Value(500)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
-      setKeyboardVisible(true);
-    });
-    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
-      setKeyboardVisible(false);
-    });
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (visible) {
-      slideAnim.setValue(500);
-      fadeAnim.setValue(0);
-
-      const timeoutId = setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.spring(slideAnim, {
-            toValue: 0,
-            tension: 65,
-            friction: 11,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          setTimeout(() => {
-            textInputRef.current?.focus();
-          }, 100);
-        });
-      }, 10);
-
-      return () => clearTimeout(timeoutId);
-    } else {
-      slideAnim.setValue(500);
-      fadeAnim.setValue(0);
-      Keyboard.dismiss();
-    }
-  }, [visible, slideAnim, fadeAnim]);
+    if (!visible) setMessage("");
+  }, [visible]);
 
   const handleSubmit = () => {
-    if (!message.trim()) {
-      return;
-    }
+    if (!message.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onSubmit(message.trim());
     setMessage("");
@@ -103,238 +44,72 @@ export function ApplicationModal({
 
   const handleClose = () => {
     Keyboard.dismiss();
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 500,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      slideAnim.setValue(500);
-      fadeAnim.setValue(0);
-      setMessage("");
-      setKeyboardVisible(false);
-      onClose();
-    });
+    setMessage("");
+    onClose();
   };
 
-  if (!visible) {
-    return null;
-  }
-
   return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="none"
-      onRequestClose={handleClose}
-      key={visible ? "open" : "closed"}
-    >
-      <Animated.View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
-          opacity: fadeAnim,
-        }}
-      >
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={handleClose}
-          style={{ flex: 1 }}
-        >
-          <SafeAreaView
-            style={{
-              flex: 1,
-              justifyContent: "flex-end",
-            }}
-            edges={["top"]}
-          >
-            <Animated.View
+    <DrawerWithLayout
+      visible={visible && !!church}
+      onClose={handleClose}
+      title={t("findChurch.applyToJoin")}
+      subtitle={church?.name ?? ""}
+      snapPoints={["50%"]}
+      content={
+        <VStack className="gap-6 px-6">
+          <VStack className="gap-3">
+            <Text
+              className="text-sm font-semibold"
+              style={{ color: theme.textPrimary }}
+            >
+              {t("findChurch.whyJoin")}
+            </Text>
+            <Text
+              className="text-xs"
+              style={{ color: theme.textSecondary }}
+            >
+              {t("findChurch.whyJoinSubtitle")}
+            </Text>
+            <Box
+              className="rounded-xl"
               style={{
-                transform: [{ translateY: slideAnim }],
-                width: "100%",
+                backgroundColor: theme.emptyBg,
+                borderWidth: 1,
+                borderColor: theme.cardBorder,
+                minHeight: 120,
               }}
             >
-              <TouchableOpacity
-                activeOpacity={1}
-                onPress={(e) => e.stopPropagation()}
-                style={{ width: "100%" }}
-              >
-                <KeyboardAvoidingView
-                  behavior={
-                    Platform.OS === "ios" && keyboardVisible
-                      ? "padding"
-                      : undefined
-                  }
-                  keyboardVerticalOffset={0}
-                  enabled={keyboardVisible}
-                  style={{ width: "100%" }}
-                >
-                  <Box
-                    className="rounded-t-3xl"
-                    style={{
-                      backgroundColor: theme.cardBg,
-                      borderTopWidth: 1,
-                      borderTopColor: theme.cardBorder,
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: -4 },
-                      shadowOpacity: isDark ? 0.3 : 0.1,
-                      shadowRadius: 16,
-                      elevation: 16,
-                    }}
-                  >
-                    <VStack className="gap-6 p-6">
-                      <HStack className="items-center justify-between">
-                        <VStack className="flex-1">
-                          <Text
-                            className="text-2xl font-bold"
-                            style={{ color: theme.textPrimary }}
-                          >
-                            {t("findChurch.applyToJoin")}
-                          </Text>
-                          {church && (
-                            <Text
-                              className="mt-1 text-base"
-                              style={{ color: theme.textSecondary }}
-                            >
-                              {church.name}
-                            </Text>
-                          )}
-                        </VStack>
-                        <TouchableOpacity
-                          onPress={handleClose}
-                          activeOpacity={0.7}
-                          className="cursor-pointer"
-                        >
-                          <Box
-                            className="rounded-full p-2"
-                            style={{
-                              backgroundColor: theme.emptyBg,
-                            }}
-                          >
-                            <Ionicons
-                              name="close"
-                              size={24}
-                              color={theme.textSecondary}
-                            />
-                          </Box>
-                        </TouchableOpacity>
-                      </HStack>
-
-                      <VStack className="gap-3">
-                        <Text
-                          className="text-sm font-semibold"
-                          style={{ color: theme.textPrimary }}
-                        >
-                          {t("findChurch.whyJoin")}
-                        </Text>
-                        <Text
-                          className="text-xs"
-                          style={{ color: theme.textSecondary }}
-                        >
-                          {t("findChurch.whyJoinSubtitle")}
-                        </Text>
-                        <Box
-                          className="rounded-xl"
-                          style={{
-                            backgroundColor: theme.emptyBg,
-                            borderWidth: 1,
-                            borderColor: theme.cardBorder,
-                            minHeight: 120,
-                          }}
-                        >
-                          <TextInput
-                            ref={textInputRef}
-                            value={message}
-                            onChangeText={setMessage}
-                            placeholder={t("findChurch.messagePlaceholder")}
-                            placeholderTextColor={theme.textTertiary}
-                            multiline
-                            numberOfLines={5}
-                            textAlignVertical="top"
-                            style={{
-                              padding: 16,
-                              fontSize: 15,
-                              color: theme.textPrimary,
-                              minHeight: 120,
-                            }}
-                            autoFocus
-                            onFocus={() => setKeyboardVisible(true)}
-                            onBlur={() => setKeyboardVisible(false)}
-                          />
-                        </Box>
-                      </VStack>
-
-                      <HStack
-                        className="gap-3"
-                        style={{ paddingBottom: Math.max(insets.bottom, 16) }}
-                      >
-                        <Button
-                          onPress={handleClose}
-                          variant="outline"
-                          size="lg"
-                          className="h-14 flex-1 cursor-pointer rounded-2xl"
-                          isDisabled={isSubmitting}
-                          style={{
-                            borderWidth: 1.5,
-                            borderColor: theme.buttonDecline,
-                            backgroundColor: theme.cardBg,
-                          }}
-                        >
-                          <ButtonText
-                            className="text-base font-semibold"
-                            style={{ color: theme.buttonDecline }}
-                          >
-                            {t("common.cancel")}
-                          </ButtonText>
-                        </Button>
-                        <Button
-                          onPress={handleSubmit}
-                          action="primary"
-                          variant="solid"
-                          size="lg"
-                          className="h-14 flex-1 cursor-pointer rounded-2xl"
-                          isDisabled={isSubmitting || !message.trim()}
-                          style={{
-                            backgroundColor: theme.buttonPrimary,
-                            shadowColor: theme.buttonPrimary,
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.25,
-                            shadowRadius: 12,
-                            elevation: 4,
-                            opacity: !message.trim() ? 0.5 : 1,
-                          }}
-                        >
-                          {isSubmitting ? (
-                            <ButtonText
-                              className="text-base font-semibold"
-                              style={{ color: "#ffffff" }}
-                            >
-                              {t("findChurch.submitting")}
-                            </ButtonText>
-                          ) : (
-                            <ButtonText
-                              className="text-base font-semibold"
-                              style={{ color: "#ffffff" }}
-                            >
-                              {t("findChurch.submitApplication")}
-                            </ButtonText>
-                          )}
-                        </Button>
-                      </HStack>
-                    </VStack>
-                  </Box>
-                </KeyboardAvoidingView>
-              </TouchableOpacity>
-            </Animated.View>
-          </SafeAreaView>
-        </TouchableOpacity>
-      </Animated.View>
-    </Modal>
+              <BottomSheetDrawerTextInput
+                value={message}
+                onChangeText={setMessage}
+                placeholder={t("findChurch.messagePlaceholder")}
+                placeholderTextColor={theme.textTertiary}
+                multiline
+                numberOfLines={5}
+                textAlignVertical="top"
+                style={{
+                  padding: 16,
+                  fontSize: 15,
+                  color: theme.textPrimary,
+                  minHeight: 120,
+                }}
+                editable={!isSubmitting}
+              />
+            </Box>
+          </VStack>
+        </VStack>
+      }
+      saveButton={{
+        label: t("findChurch.submitApplication"),
+        onPress: handleSubmit,
+        disabled: isSubmitting || !message.trim(),
+        loading: isSubmitting,
+      }}
+      cancelButton={{
+        label: t("common.cancel"),
+        onPress: handleClose,
+        disabled: isSubmitting,
+      }}
+    />
   );
 }

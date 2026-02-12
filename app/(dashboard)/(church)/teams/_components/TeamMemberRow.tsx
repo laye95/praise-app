@@ -1,14 +1,13 @@
-import { TouchableOpacity } from "react-native";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
-import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
-import { Ionicons } from "@expo/vector-icons";
-import { TeamMemberWithUser, TeamMemberRole } from "@/types/team";
-import { User } from "@/types/user";
+import { VStack } from "@/components/ui/vstack";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { TeamMemberRole, TeamMemberWithUser } from "@/types/team";
+import { Ionicons } from "@expo/vector-icons";
+import { TouchableOpacity } from "react-native";
 
 interface TeamMemberRowProps {
   member: TeamMemberWithUser;
@@ -55,8 +54,7 @@ export function TeamMemberRow({
   };
 
   const initials = getInitials(member.user.full_name, member.user.email);
-  const displayName =
-    member.user.full_name || member.user.email.split("@")[0];
+  const displayName = member.user.full_name || member.user.email.split("@")[0];
 
   return (
     <TouchableOpacity
@@ -65,7 +63,7 @@ export function TeamMemberRow({
       disabled={!canEditPosition}
     >
       <Box
-        className="rounded-xl p-4 mb-3"
+        className="mb-3 rounded-xl p-4"
         style={{
           backgroundColor: theme.cardBg,
           shadowColor: "#000",
@@ -77,112 +75,110 @@ export function TeamMemberRow({
           borderColor: theme.cardBorder,
         }}
       >
-      <HStack className="items-center justify-between">
-        <HStack className="items-center gap-3 flex-1">
-          <Box
-            className="rounded-xl"
-            style={{
-              width: 48,
-              height: 48,
-              backgroundColor: theme.avatarPrimary,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text
-              className="text-base font-semibold"
-              style={{ color: isDark ? "#ffffff" : theme.buttonPrimary }}
-            >
-              {initials}
-            </Text>
-          </Box>
-          <VStack className="flex-1 gap-0.5">
-            <HStack className="items-center gap-2">
-              <Text
-                className="text-base font-semibold"
-                style={{ color: theme.textPrimary }}
-              >
-                {displayName}
-              </Text>
-              {isCurrentUser && (
-                <Text
-                  className="text-xs"
-                  style={{ color: theme.textSecondary }}
-                >
-                  ({t("teams.you")})
-                </Text>
-              )}
-            </HStack>
-            {member.user.full_name && (
-              <Text
-                className="text-sm"
-                style={{ color: theme.textSecondary }}
-              >
-                {member.user.email}
-              </Text>
-            )}
-            {member.position && (
-              <HStack className="items-center gap-1 mt-0.5">
-                <Ionicons
-                  name="musical-notes"
-                  size={12}
-                  color={theme.textSecondary}
-                />
-                <Text
-                  className="text-xs"
-                  style={{ color: theme.textSecondary }}
-                >
-                  {member.position}
-                </Text>
-              </HStack>
-            )}
-          </VStack>
-        </HStack>
-        <HStack className="items-center gap-3">
-          <Box
-            className="rounded px-2 py-1"
-            style={{
-              backgroundColor:
-                member.role === "admin"
-                  ? theme.badgeWarning
-                  : theme.badgeInfo,
-            }}
-          >
-            <Text
-              className="text-xs font-semibold"
+        <HStack className="items-center justify-between">
+          <HStack className="flex-1 items-center gap-3">
+            <Box
+              className="rounded-xl"
               style={{
-                color:
-                  member.role === "admin"
-                    ? isDark
-                      ? "#ffffff"
-                      : "#92400e"
-                    : isDark
-                    ? "#ffffff"
-                    : "#2563eb",
+                width: 48,
+                height: 48,
+                backgroundColor: theme.avatarPrimary,
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              {member.role === "admin"
-                ? t("teams.admin")
-                : t("teams.member")}
-            </Text>
-          </Box>
-          {canRemove && (
-            <TouchableOpacity
-              onPress={() => onRemove?.(member.user_id)}
-              disabled={isRemoving}
-              activeOpacity={0.7}
-              className="cursor-pointer"
+              <Text
+                className="text-base font-semibold"
+                style={{ color: isDark ? "#ffffff" : theme.buttonPrimary }}
+              >
+                {initials}
+              </Text>
+            </Box>
+            <VStack className="flex-1 gap-0.5">
+              <HStack className="items-center gap-2">
+                <Text
+                  className="text-base font-semibold"
+                  style={{ color: theme.textPrimary }}
+                >
+                  {displayName}
+                </Text>
+                {isCurrentUser && (
+                  <Text
+                    className="text-xs"
+                    style={{ color: theme.textSecondary }}
+                  >
+                    ({t("teams.you")})
+                  </Text>
+                )}
+              </HStack>
+              {member.user.full_name && (
+                <Text
+                  className="text-sm"
+                  style={{ color: theme.textSecondary }}
+                >
+                  {member.user.email}
+                </Text>
+              )}
+              {member.position && (
+                <HStack className="mt-0.5 items-center gap-1">
+                  <Ionicons
+                    name="musical-notes"
+                    size={12}
+                    color={theme.textSecondary}
+                  />
+                  <Text
+                    className="text-xs"
+                    style={{ color: theme.textSecondary }}
+                  >
+                    {member.position}
+                  </Text>
+                </HStack>
+              )}
+            </VStack>
+          </HStack>
+          <HStack className="items-center gap-3">
+            <Box
+              className="rounded px-2 py-1"
+              style={{
+                backgroundColor:
+                  member.role === "admin"
+                    ? theme.badgeWarning
+                    : theme.badgeInfo,
+              }}
             >
-              <Ionicons
-                name="trash-outline"
-                size={20}
-                color={isRemoving ? theme.textTertiary : "#dc2626"}
-              />
-            </TouchableOpacity>
-          )}
+              <Text
+                className="text-xs font-semibold"
+                style={{
+                  color:
+                    member.role === "admin"
+                      ? isDark
+                        ? "#ffffff"
+                        : "#92400e"
+                      : isDark
+                        ? "#ffffff"
+                        : "#2563eb",
+                }}
+              >
+                {member.role === "admin" ? t("teams.admin") : t("teams.member")}
+              </Text>
+            </Box>
+            {canRemove && (
+              <TouchableOpacity
+                onPress={() => onRemove?.(member.user_id)}
+                disabled={isRemoving}
+                activeOpacity={0.7}
+                className="cursor-pointer"
+              >
+                <Ionicons
+                  name="trash-outline"
+                  size={20}
+                  color={isRemoving ? theme.textTertiary : "#dc2626"}
+                />
+              </TouchableOpacity>
+            )}
+          </HStack>
         </HStack>
-      </HStack>
-    </Box>
+      </Box>
     </TouchableOpacity>
   );
 }

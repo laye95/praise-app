@@ -34,6 +34,11 @@ export default function GroupDetailScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedMemberForRole, setSelectedMemberForRole] = useState<TeamGroupMemberWithUser | null>(null);
+  const [selectedMemberForPosition, setSelectedMemberForPosition] = useState<{
+    id: string;
+    name: string;
+    position?: string;
+  } | null>(null);
   const { team, members: teamMembers, isAdmin } = useTeam(teamId);
   const { deleteGroup, isDeleting } = useTeamGroups(teamId);
   const {

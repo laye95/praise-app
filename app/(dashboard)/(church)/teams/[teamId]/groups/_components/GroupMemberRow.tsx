@@ -29,6 +29,7 @@ export function GroupMemberRow({
   canChangeLeadership = false,
   onRemove,
   onUpdateRole,
+  onUpdatePosition,
   onPress,
   isRemoving = false,
 }: GroupMemberRowProps) {

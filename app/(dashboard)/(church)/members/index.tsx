@@ -1,3 +1,4 @@
+import { AnimatedTabScreen } from "@/components/ui/AnimatedTabScreen";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
@@ -183,8 +184,9 @@ export default function MembersScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: theme.pageBg }}>
-      <VStack className="flex-1">
+    <AnimatedTabScreen>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: theme.pageBg }}>
+        <VStack className="flex-1">
         <Box className="px-6 pb-4 pt-6">
           <HStack className="items-center justify-between">
             <VStack className="gap-2 flex-1">
@@ -860,6 +862,7 @@ export default function MembersScreen() {
           </TouchableOpacity>
         </Box>
       )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </AnimatedTabScreen>
   );
 }
